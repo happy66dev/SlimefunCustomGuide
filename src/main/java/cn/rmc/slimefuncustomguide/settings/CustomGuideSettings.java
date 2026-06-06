@@ -1,12 +1,21 @@
 package cn.rmc.slimefuncustomguide.settings;
 
-import io.github.thebusybiscuit.slimefun4.libraries.dough.items.CustomItemStack;
+import cn.rmc.slimefuncustomguide.listener.CustomGuideListener;
+import io.github.thebusybiscuit.slimefun4.core.guide.SlimefunGuide;
+import io.github.thebusybiscuit.slimefun4.core.guide.SlimefunGuideMode;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
+import io.github.thebusybiscuit.slimefun4.libraries.dough.items.CustomItemStack;
 import io.github.thebusybiscuit.slimefun4.utils.ChestMenuUtils;
+import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
 import me.mrCookieSlime.CSCoreLibPlugin.general.Inventory.ChestMenu;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public final class CustomGuideSettings {
 
@@ -22,7 +31,7 @@ public final class CustomGuideSettings {
     private CustomGuideSettings() {}
 
     public static void openSettings(Player p, ItemStack guide) {
-        ChestMenu menu = new ChestMenu("\u81ea\u5b9a\u4e49\u6307\u5357\u8bbe\u7f6e");
+        ChestMenu menu = new ChestMenu(ChatColor.BLACK + "Slimefun 指南设置");
         menu.setEmptySlotsClickable(false);
 
         for (int slot : BG) {
@@ -38,19 +47,36 @@ public final class CustomGuideSettings {
 
         menu.addItem(4, new CustomItemStack(
                 ChestMenuUtils.getSearchButton(p),
-                ChatColor.GRAY + "\u6307\u5357\u5206\u7c7b\u8bbe\u7f6e",
+                ChatColor.WHITE + Slimefun.getLocalization().getMessage(p, "guide.title.settings"),
                 "",
-                ChatColor.YELLOW + "\u5728\u6b64\u5207\u6362\u81ea\u5b9a\u4e49\u5206\u7c7b\u6837\u5f0f"
+                ChatColor.YELLOW + "自定义指南书设置"
         ));
         menu.addMenuClickHandler(4, ChestMenuUtils.getEmptyClickHandler());
 
-        int optionSlot = 22;
-        ItemStack modeItem = modeOption.getDisplayItem(p, guide).orElse(new ItemStack(org.bukkit.Material.BARRIER));
-        menu.addItem(optionSlot, modeItem);
-        menu.addMenuClickHandler(optionSlot, (pl, s, is, action) -> {
+        boolean isCustom = CustomGuideListener.isCustomMode(guide);
+        ItemStack modeItem = modeOption.getDisplayItem(p, guide).orElse(new ItemStack(Material.BARRIER));
+        menu.addItem(20, modeItem);
+        menu.addMenuClickHandler(20, (pl, s, is, action) -> {
             modeOption.onClick(pl, guide);
             return false;
         });
+
+        boolean isCheat = SlimefunUtils.isItemSimilar(guide, SlimefunGuide.getItem(SlimefunGuideMode.CHEAT_MODE), true, false);
+        ItemStack cheatItem;
+        if (isCheat) {
+            cheatItem = new ItemStack(Material.COMMAND_BLOCK);
+        } else {
+            cheatItem = new ItemStack(Material.CHEST);
+        }
+        ItemMeta cheatMeta = cheatItem.getItemMeta();
+        cheatMeta.setDisplayName(ChatColor.GRAY + "指南类型: " + ChatColor.YELLOW + (isCheat ? "作弊模式" : "生存模式"));
+        List<String> cheatLore = new ArrayList<>();
+        cheatLore.add("");
+        cheatLore.add(ChatColor.GRAY + "使用 /sf cheat 获取作弊指南");
+        cheatMeta.setLore(cheatLore);
+        cheatItem.setItemMeta(cheatMeta);
+        menu.addItem(24, cheatItem);
+        menu.addMenuClickHandler(24, ChestMenuUtils.getEmptyClickHandler());
 
         menu.open(p);
     }
