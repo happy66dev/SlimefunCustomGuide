@@ -9,154 +9,99 @@ public final class JsonUtil {
     private JsonUtil() {}
 
     public static String categoriesToJson(List<CustomCategory> categories) {
-        StringBuilder sb = new StringBuilder("{\"categories\":[");
-        boolean first = true;
-        for (CustomCategory cat : categories) {
-            if (!first) sb.append(',');
-            categoryToJson(cat, sb);
-            first = false;
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"categories\":[");
+        for (int i = 0; i < categories.size(); i++) {
+            if (i > 0) sb.append(',');
+            appendCategory(sb, categories.get(i));
         }
         sb.append("]}");
         return sb.toString();
     }
 
-    private static void categoryToJson(CustomCategory cat, StringBuilder sb) {
+    private static void appendCategory(StringBuilder sb, CustomCategory cat) {
         sb.append('{');
-        appendField(sb, "key", cat.getKey());
+        appendString(sb, "key", cat.getKey());
         sb.append(',');
-        appendField(sb, "display", cat.getDisplay());
+        appendString(sb, "display", cat.getDisplay());
         sb.append(',');
-        IconSource icon = cat.getIconSource();
-        sb.append("\"icon\":{");
-        if (icon != null) {
-            appendField(sb, "type", icon.getType().name());
-            sb.append(',');
-            appendField(sb, "id", icon.getId());
-        } else {
-            appendField(sb, "type", "VANILLA");
-            sb.append(',');
-            appendField(sb, "id", "BOOK");
-        }
-        sb.append('}');
-        sb.append(",\"page\":").append(cat.getPage());
-        sb.append(",\"slot\":").append(cat.getSlot());
-        sb.append(",\"glow\":").append(cat.isGlow());
-        sb.append(",\"childrenCount\":").append(cat.getChildrenCount());
-        sb.append(",\"directItemsCount\":").append(cat.getDirectItemsCount());
-        sb.append(",\"totalItemsCount\":").append(cat.getTotalItemsCount());
-
-        List<String> lore = cat.getLore();
-        if (lore != null && !lore.isEmpty()) {
-            sb.append(",\"lore\":[");
-            boolean firstLore = true;
-            for (String line : lore) {
-                if (!firstLore) sb.append(',');
-                appendString(sb, line);
-                firstLore = false;
-            }
-            sb.append(']');
-        }
-
+        sb.append("\"icon\":{\"type\":\"");
+        sb.append(escape(cat.getIconSource().getType().name()));
+        sb.append("\",\"id\":\"");
+        sb.append(escape(cat.getIconSource().getId()));
+        sb.append("\"},");
+        sb.append("\"glow\":").append(cat.isGlow()).append(',');
+        appendStrings(sb, "lore", cat.getLore());
+        sb.append(',');
+        sb.append("\"page\":").append(cat.getPage()).append(',');
+        sb.append("\"slot\":").append(cat.getSlot()).append(',');
+        sb.append("\"children\":[");
         List<GuideTreeNode> children = cat.getChildren();
-        if (children != null && !children.isEmpty()) {
-            sb.append(",\"children\":[");
-            boolean firstChild = true;
-            for (GuideTreeNode child : children) {
-                if (!firstChild) sb.append(',');
-                if (child.getType() == TreeNodeType.CATEGORY) {
-                    categoryToJson((CustomCategory) child, sb);
-                } else if (child.getType() == TreeNodeType.ITEM) {
-                    itemToJson((CustomItemEntry) child, sb);
-                } else if (child.getType() == TreeNodeType.PLACEHOLDER) {
-                    placeholderToJson((CustomPlaceholderEntry) child, sb);
-                }
-                firstChild = false;
+        for (int i = 0; i < children.size(); i++) {
+            GuideTreeNode child = children.get(i);
+            if (child.getType() == TreeNodeType.CATEGORY) {
+                if (i > 0) sb.append(',');
+                appendCategory(sb, (CustomCategory) child);
             }
-            sb.append(']');
         }
-
-        List<GuideTreeNode> directItems = getDirectItems(children);
-        if (directItems != null && !directItems.isEmpty()) {
-            sb.append(",\"items\":[");
-            boolean firstItem = true;
-            for (GuideTreeNode node : directItems) {
-                if (!firstItem) sb.append(',');
-                if (node.getType() == TreeNodeType.ITEM) {
-                    itemToJson((CustomItemEntry) node, sb);
-                } else if (node.getType() == TreeNodeType.PLACEHOLDER) {
-                    placeholderToJson((CustomPlaceholderEntry) node, sb);
-                }
-                firstItem = false;
-            }
-            sb.append(']');
-        }
-
-        sb.append('}');
-    }
-
-    private static void itemToJson(CustomItemEntry entry, StringBuilder sb) {
-        sb.append("{\"type\":\"ITEM\",");
-        appendField(sb, "id", entry.getSlimefunId());
-        sb.append(",\"page\":").append(entry.getPage());
-        sb.append(",\"slot\":").append(entry.getSlot());
-        sb.append('}');
-    }
-
-    private static void placeholderToJson(CustomPlaceholderEntry entry, StringBuilder sb) {
-        sb.append("{\"type\":\"PLACEHOLDER\",");
-        IconSource icon = entry.getIconSource();
-        sb.append("\"icon\":{");
-        if (icon != null) {
-            appendField(sb, "type", icon.getType().name());
-            sb.append(',');
-            appendField(sb, "id", icon.getId());
-        }
-        sb.append('}');
-        if (entry.getDisplay() != null) {
-            sb.append(',');
-            appendField(sb, "display", entry.getDisplay());
-        }
-        sb.append(",\"glow\":").append(entry.isGlow());
-        List<String> lore = entry.getLore();
-        if (lore != null && !lore.isEmpty()) {
-            sb.append(",\"lore\":[");
-            boolean first = true;
-            for (String line : lore) {
+        sb.append("],\"items\":[");
+        boolean first = true;
+        for (GuideTreeNode child : children) {
+            if (child.getType() == TreeNodeType.ITEM) {
                 if (!first) sb.append(',');
-                appendString(sb, line);
+                appendItemEntry(sb, (CustomItemEntry) child);
+                first = false;
+            } else if (child.getType() == TreeNodeType.PLACEHOLDER) {
+                if (!first) sb.append(',');
+                appendPlaceholderEntry(sb, (CustomPlaceholderEntry) child);
                 first = false;
             }
-            sb.append(']');
         }
-        sb.append(",\"page\":").append(entry.getPage());
-        sb.append(",\"slot\":").append(entry.getSlot());
-        sb.append('}');
+        sb.append("]}");
     }
 
-    private static List<GuideTreeNode> getDirectItems(List<GuideTreeNode> children) {
-        if (children == null) return null;
-        java.util.List<GuideTreeNode> items = new java.util.ArrayList<>();
-        for (GuideTreeNode child : children) {
-            if (child.getType() != TreeNodeType.CATEGORY) {
-                items.add(child);
-            }
+    private static void appendItemEntry(StringBuilder sb, CustomItemEntry entry) {
+        sb.append("{\"type\":\"ITEM\",");
+        appendString(sb, "id", entry.getSlimefunId());
+        sb.append(',');
+        appendString(sb, "display", entry.getDisplay());
+        sb.append(',');
+        sb.append("\"page\":").append(entry.getPage()).append(',');
+        sb.append("\"slot\":").append(entry.getSlot()).append('}');
+    }
+
+    private static void appendPlaceholderEntry(StringBuilder sb, CustomPlaceholderEntry entry) {
+        sb.append("{\"type\":\"PLACEHOLDER\",");
+        appendString(sb, "display", entry.getDisplay());
+        sb.append(',');
+        sb.append("\"icon\":{\"type\":\"");
+        sb.append(escape(entry.getIconSource().getType().name()));
+        sb.append("\",\"id\":\"");
+        sb.append(escape(entry.getIconSource().getId()));
+        sb.append("\"},");
+        sb.append("\"glow\":").append(entry.isGlow()).append(',');
+        appendStrings(sb, "lore", entry.getLore());
+        sb.append(',');
+        sb.append("\"page\":").append(entry.getPage()).append(',');
+        sb.append("\"slot\":").append(entry.getSlot()).append('}');
+    }
+
+    private static void appendString(StringBuilder sb, String key, String value) {
+        sb.append('"').append(key).append("\":\"");
+        sb.append(escape(value));
+        sb.append('"');
+    }
+
+    private static void appendStrings(StringBuilder sb, String key, List<String> values) {
+        sb.append('"').append(key).append("\":[");
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) sb.append(',');
+            sb.append('"').append(escape(values.get(i))).append('"');
         }
-        return items.isEmpty() ? null : items;
+        sb.append(']');
     }
 
-    private static void appendField(StringBuilder sb, String key, String value) {
-        sb.append('"').append(escapeJson(key)).append("\":\"");
-        if (value != null) sb.append(escapeJson(value));
-        sb.append('"');
-    }
-
-    private static void appendString(StringBuilder sb, String value) {
-        sb.append('"');
-        if (value != null) sb.append(escapeJson(value));
-        sb.append('"');
-    }
-
-    public static String escapeJson(String s) {
+    private static String escape(String s) {
         if (s == null) return "";
         StringBuilder out = new StringBuilder();
         for (char c : s.toCharArray()) {
