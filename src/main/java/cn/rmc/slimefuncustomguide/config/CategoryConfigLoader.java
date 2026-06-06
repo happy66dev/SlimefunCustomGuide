@@ -8,6 +8,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.util.*;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

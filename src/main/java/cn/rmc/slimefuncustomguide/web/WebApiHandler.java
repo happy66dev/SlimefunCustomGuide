@@ -105,7 +105,6 @@ public class WebApiHandler implements HttpHandler {
     }
 
     private void saveCategoriesFromJson(String json) {
-        File file = new File(plugin.getDataFolder(), "categories.yml");
         YamlConfiguration yaml = new YamlConfiguration();
         ConfigurationSection root = yaml.createSection("categories");
 
