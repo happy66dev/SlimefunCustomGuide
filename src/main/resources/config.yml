@@ -1,1 +1,6 @@
 enable-custom-guide: true
+
+web-editor:
+  enabled: true
+  port: 8899
+  bind: "127.0.0.1"
