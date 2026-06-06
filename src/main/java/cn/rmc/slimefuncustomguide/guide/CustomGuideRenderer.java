@@ -31,6 +31,8 @@ import java.util.Optional;
 
 public class CustomGuideRenderer {
 
+    private static final String ROOT_KEY = "§r§0_root";
+
     static final int CONTENT_SIZE = 36;
     static final int BACK_SLOT = 0;
     static final int SETTINGS_SLOT = 1;
@@ -44,7 +46,7 @@ public class CustomGuideRenderer {
 
     public void openMainMenu(Player player, CustomGuideHistory history,
                              SlimefunGuideMode mode, int page) {
-        CustomCategory dummyRoot = new CustomCategory("_root", "Root",
+        CustomCategory dummyRoot = new CustomCategory(ROOT_KEY, "Root",
                 new IconSource(IconType.VANILLA, "BOOK"), null, 1, 0, false);
         for (CustomCategory cat : plugin.getRootCategories()) {
             dummyRoot.addChild(cat);
@@ -111,7 +113,7 @@ public class CustomGuideRenderer {
                 } else {
                     CustomGuideHistory.CategoryEntry back = history.goBack();
                     if (back != null) {
-                        openMenu(pl, history, mode, back.category, back.page);
+                        openMenu(pl, history, mode, back.getCategory(), back.getPage());
                     } else {
                         history.clear();
                         openMainMenu(pl, history, mode, history.getMainMenuPage());
@@ -136,6 +138,7 @@ public class CustomGuideRenderer {
                                 Player player, CustomGuideHistory history,
                                 SlimefunGuideMode mode, int page, int maxPage) {
         for (GuideTreeNode child : children) {
+            if (child.getPage() != page) continue;
             int slot = child.getSlot();
             if (slot < 0 || slot >= CONTENT_SIZE) continue;
             int absSlot = 9 + slot;
@@ -154,7 +157,7 @@ public class CustomGuideRenderer {
             if (child.getType() == TreeNodeType.CATEGORY) {
                 CustomCategory cat = (CustomCategory) child;
                 menu.addMenuClickHandler(absSlot, (pl, s, is, action) -> {
-                    history.push(cat, 1);
+                    history.push(cat, page);
                     openMenu(pl, history, mode, cat, 1);
                     return false;
                 });
@@ -218,7 +221,7 @@ public class CustomGuideRenderer {
             menu.addMenuClickHandler(PREV_SLOT, (pl, s, is, action) -> {
                 int next = page - 1;
                 if (next > 0) {
-                    boolean isRoot = category.getKey().equals("_root");
+                    boolean isRoot = category.getKey().equals(ROOT_KEY);
                     if (isRoot) openMainMenu(pl, history, mode, next);
                     else openMenu(pl, history, mode, category, next);
                 }
@@ -229,7 +232,7 @@ public class CustomGuideRenderer {
             menu.addMenuClickHandler(NEXT_SLOT, (pl, s, is, action) -> {
                 int next = page + 1;
                 if (next <= maxPage) {
-                    boolean isRoot = category.getKey().equals("_root");
+                    boolean isRoot = category.getKey().equals(ROOT_KEY);
                     if (isRoot) openMainMenu(pl, history, mode, next);
                     else openMenu(pl, history, mode, category, next);
                 }

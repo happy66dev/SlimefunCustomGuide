@@ -33,11 +33,16 @@ public class CustomGuideHistory {
     public CategoryEntry getCurrent() { return stack.peekLast(); }
 
     public static class CategoryEntry {
-        public final CustomCategory category;
-        public int page;
+        private final CustomCategory category;
+        private int page;
+
         public CategoryEntry(CustomCategory category, int page) {
             this.category = category;
             this.page = page;
         }
+
+        public CustomCategory getCategory() { return category; }
+        public int getPage() { return page; }
+        public void setPage(int page) { this.page = page; }
     }
 }

@@ -16,7 +16,7 @@ import java.util.List;
 public final class CustomGuidePlugin extends JavaPlugin implements SlimefunAddon {
 
     private static CustomGuidePlugin instance;
-    private List<CustomCategory> rootCategories;
+    private volatile List<CustomCategory> rootCategories;
     private WebServer webServer;
 
     @Override
@@ -32,6 +32,7 @@ public final class CustomGuidePlugin extends JavaPlugin implements SlimefunAddon
         getServer().getPluginManager().registerEvents(new CustomGuideListener(this), this);
 
         getCommand("slimefuncustomguide").setExecutor(new CustomGuideCommand(this));
+        getCommand("slimefuncustomguide").setTabCompleter(new CustomGuideCommand(this));
 
         if (getConfig().getBoolean("web-editor.enabled", true)) {
             String bind = getConfig().getString("web-editor.bind", "127.0.0.1");

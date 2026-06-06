@@ -76,7 +76,9 @@ public class CustomGuideCommand implements CommandExecutor, TabCompleter {
                 if (group instanceof SubItemGroup) {
                     SubItemGroup sub = (SubItemGroup) group;
                     NestedItemGroup parent = sub.getParent();
-                    nestedMap.computeIfAbsent(parent, k -> new ArrayList<>()).add(sub);
+                    if (parent != null) {
+                        nestedMap.computeIfAbsent(parent, k -> new ArrayList<>()).add(sub);
+                    }
                 }
             }
         }
@@ -86,7 +88,9 @@ public class CustomGuideCommand implements CommandExecutor, TabCompleter {
                 continue;
             }
 
-            String key = group.getUnlocalizedName().replaceAll("[&§][0-9a-fA-Fk-oK-OrR]", "");
+            String raw = group.getUnlocalizedName();
+            if (raw == null || raw.isEmpty()) continue;
+            String key = raw.replaceAll("[&§][0-9a-fA-Fk-oK-OrR]", "");
             if (key.isEmpty()) continue;
             String display = "&f" + group.getDisplayName(null);
 
@@ -166,7 +170,11 @@ public class CustomGuideCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return Arrays.asList("export", "reload");
+            String prefix = args[0].toLowerCase();
+            List<String> list = new ArrayList<>();
+            if ("export".startsWith(prefix)) list.add("export");
+            if ("reload".startsWith(prefix)) list.add("reload");
+            return list;
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("export")) {
             return Collections.singletonList("flat");

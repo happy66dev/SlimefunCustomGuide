@@ -135,12 +135,16 @@ public class WebApiHandler implements HttpHandler {
             }
         }
 
-        try (Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+        File tempFile = new File(plugin.getDataFolder(), "categories.yml.tmp");
+        try (Writer writer = new OutputStreamWriter(new FileOutputStream(tempFile), StandardCharsets.UTF_8)) {
             writer.write(yaml.saveToString());
             writer.flush();
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Failed to save categories.yml from web editor", e);
         }
+        File finalFile = new File(plugin.getDataFolder(), "categories.yml");
+        if (finalFile.exists()) finalFile.delete();
+        tempFile.renameTo(finalFile);
     }
 
     private void parseCategoryJson(String json, ConfigurationSection parent) {
@@ -405,8 +409,8 @@ public class WebApiHandler implements HttpHandler {
                     if (!first) sb.append(',');
                     sb.append("{\"type\":\"SLIMEFUN\",\"id\":\"").append(JsonUtil.escape(id));
                     sb.append("\",\"display\":\"").append(JsonUtil.escape(name != null ? name : id));
-                    sb.append("\",\"group\":\"").append(JsonUtil.escape(sfItem.getItemGroup().getUnlocalizedName()));
-                    sb.append("\"}");
+                    String groupName = sfItem.getItemGroup() != null ? sfItem.getItemGroup().getUnlocalizedName() : "unknown";
+                    sb.append("\",\"group\":\"").append(JsonUtil.escape(groupName)).append("\"}");
                     first = false;
                     if (sb.length() > 10000) {
                         truncated = true;

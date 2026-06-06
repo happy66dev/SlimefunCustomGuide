@@ -14,18 +14,31 @@ public final class PlaceholderResolver {
         List<String> raw = node.getLore();
         if (raw.isEmpty()) return raw;
 
+        String pageStr = String.valueOf(currentPage);
+        String totalPagesStr = String.valueOf(totalPages);
+        String slotStr = String.valueOf(node.getSlot());
+
+        String childrenCountStr = null;
+        String directItemsCountStr = null;
+        String totalItemsCountStr = null;
+        if (node instanceof CustomCategory) {
+            CustomCategory cat = (CustomCategory) node;
+            childrenCountStr = String.valueOf(cat.getChildrenCount());
+            directItemsCountStr = String.valueOf(cat.getDirectItemsCount());
+            totalItemsCountStr = String.valueOf(cat.getTotalItemsCount());
+        }
+
         List<String> resolved = new ArrayList<>(raw.size());
         for (String line : raw) {
             String result = line;
-            result = result.replace("{page}", String.valueOf(currentPage));
-            result = result.replace("{total_pages}", String.valueOf(totalPages));
-            result = result.replace("{slot}", String.valueOf(node.getSlot()));
+            result = result.replace("{page}", pageStr);
+            result = result.replace("{total_pages}", totalPagesStr);
+            result = result.replace("{slot}", slotStr);
 
-            if (node instanceof CustomCategory) {
-                CustomCategory cat = (CustomCategory) node;
-                result = result.replace("{children_count}", String.valueOf(cat.getChildrenCount()));
-                result = result.replace("{items_count}", String.valueOf(cat.getDirectItemsCount()));
-                result = result.replace("{total_items_count}", String.valueOf(cat.getTotalItemsCount()));
+            if (childrenCountStr != null) {
+                result = result.replace("{children_count}", childrenCountStr);
+                result = result.replace("{items_count}", directItemsCountStr);
+                result = result.replace("{total_items_count}", totalItemsCountStr);
             }
 
             resolved.add(result);

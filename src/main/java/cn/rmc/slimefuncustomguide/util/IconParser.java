@@ -11,9 +11,13 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.lang.reflect.Field;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.bukkit.inventory.meta.SkullMeta;
 
 public final class IconParser {
 
@@ -78,7 +82,6 @@ public final class IconParser {
         return Optional.empty();
     }
 
-    @SuppressWarnings("deprecation")
     private static Optional<ItemStack> parseHead(String textureId, Logger logger) {
         if (textureId == null || textureId.isEmpty()) {
             logger.warning("HEAD texture is empty");
@@ -86,6 +89,30 @@ public final class IconParser {
         }
         try {
             ItemStack head = new ItemStack(Material.PLAYER_HEAD);
+            if (textureId.length() <= 16) {
+                SkullMeta meta = (SkullMeta) head.getItemMeta();
+                meta.setOwner(textureId);
+                head.setItemMeta(meta);
+            } else {
+                SkullMeta meta = (SkullMeta) head.getItemMeta();
+                try {
+                    UUID uuid = UUID.randomUUID();
+                    Field profileField = meta.getClass().getDeclaredField("profile");
+                    profileField.setAccessible(true);
+                    Object profile = Class.forName("com.mojang.authlib.GameProfile")
+                            .getConstructor(UUID.class, String.class)
+                            .newInstance(uuid, "SCGTexture");
+                    Class<?> propertyClass = Class.forName("com.mojang.authlib.properties.Property");
+                    Object property = propertyClass.getConstructor(String.class, String.class)
+                            .newInstance("textures", textureId);
+                    Object properties = profile.getClass().getMethod("getProperties").invoke(profile);
+                    properties.getClass().getMethod("put", Object.class, Object.class)
+                            .invoke(properties, "textures", property);
+                    profileField.set(meta, profile);
+                } catch (Exception e) {
+                }
+                head.setItemMeta(meta);
+            }
             return Optional.of(head);
         } catch (Exception e) {
             logger.log(Level.WARNING, "Failed to create head: " + textureId, e);

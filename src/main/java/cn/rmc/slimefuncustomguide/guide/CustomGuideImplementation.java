@@ -34,6 +34,8 @@ public class CustomGuideImplementation implements SlimefunGuideImplementation {
         return SlimefunGuide.getItem(SlimefunGuideMode.SURVIVAL_MODE);
     }
 
+    // Guide opening is intercepted by CustomGuideListener.onGuideOpen
+    // This implementation acts as a pass-through/fallback and is intentionally empty
     @Override
     @ParametersAreNonnullByDefault
     public void openMainMenu(PlayerProfile profile, int page) {
@@ -41,6 +43,8 @@ public class CustomGuideImplementation implements SlimefunGuideImplementation {
         if (player == null) return;
     }
 
+    // Guide opening is intercepted by CustomGuideListener.onGuideOpen
+    // This implementation acts as a pass-through/fallback and is intentionally empty
     @Override
     @ParametersAreNonnullByDefault
     public void openItemGroup(PlayerProfile profile, ItemGroup group, int page) {

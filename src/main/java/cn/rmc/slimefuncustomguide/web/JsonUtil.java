@@ -2,7 +2,9 @@ package cn.rmc.slimefuncustomguide.web;
 
 import cn.rmc.slimefuncustomguide.model.*;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class JsonUtil {
 
@@ -11,24 +13,35 @@ public final class JsonUtil {
     public static String categoriesToJson(List<CustomCategory> categories) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"categories\":[");
+        Set<String> visitedKeys = new HashSet<>();
         for (int i = 0; i < categories.size(); i++) {
             if (i > 0) sb.append(',');
-            appendCategory(sb, categories.get(i));
+            appendCategory(sb, categories.get(i), visitedKeys);
         }
         sb.append("]}");
         return sb.toString();
     }
 
-    private static void appendCategory(StringBuilder sb, CustomCategory cat) {
+    private static void appendCategory(StringBuilder sb, CustomCategory cat, Set<String> visitedKeys) {
+        String key = cat.getKey();
+        if (!visitedKeys.add(key)) {
+            sb.append("{\"key\":\"");
+            sb.append(escape(key));
+            sb.append("\",\"_cycle\":true}");
+            return;
+        }
+        IconSource iconSource = cat.getIconSource();
+        String iconTypeName = iconSource != null ? iconSource.getType().name() : "VANILLA";
+        String iconId = iconSource != null ? iconSource.getId() : "BOOK";
         sb.append('{');
-        appendString(sb, "key", cat.getKey());
+        appendString(sb, "key", key);
         sb.append(',');
         appendString(sb, "display", cat.getDisplay());
         sb.append(',');
         sb.append("\"icon\":{\"type\":\"");
-        sb.append(escape(cat.getIconSource().getType().name()));
+        sb.append(escape(iconTypeName));
         sb.append("\",\"id\":\"");
-        sb.append(escape(cat.getIconSource().getId()));
+        sb.append(escape(iconId));
         sb.append("\"},");
         sb.append("\"glow\":").append(cat.isGlow()).append(',');
         appendStrings(sb, "lore", cat.getLore());
@@ -41,7 +54,7 @@ public final class JsonUtil {
         for (GuideTreeNode child : children) {
             if (child.getType() == TreeNodeType.CATEGORY) {
                 if (!firstChild) sb.append(',');
-                appendCategory(sb, (CustomCategory) child);
+                appendCategory(sb, (CustomCategory) child, visitedKeys);
                 firstChild = false;
             }
         }
@@ -72,13 +85,16 @@ public final class JsonUtil {
     }
 
     private static void appendPlaceholderEntry(StringBuilder sb, CustomPlaceholderEntry entry) {
+        IconSource iconSource = entry.getIconSource();
+        String iconTypeName = iconSource != null ? iconSource.getType().name() : "VANILLA";
+        String iconId = iconSource != null ? iconSource.getId() : "BOOK";
         sb.append("{\"type\":\"PLACEHOLDER\",");
         appendString(sb, "display", entry.getDisplay());
         sb.append(',');
         sb.append("\"icon\":{\"type\":\"");
-        sb.append(escape(entry.getIconSource().getType().name()));
+        sb.append(escape(iconTypeName));
         sb.append("\",\"id\":\"");
-        sb.append(escape(entry.getIconSource().getId()));
+        sb.append(escape(iconId));
         sb.append("\"},");
         sb.append("\"glow\":").append(entry.isGlow()).append(',');
         appendStrings(sb, "lore", entry.getLore());
@@ -112,7 +128,14 @@ public final class JsonUtil {
                 case '\n': out.append("\\n"); break;
                 case '\r': out.append("\\r"); break;
                 case '\t': out.append("\\t"); break;
-                default:   out.append(c);
+                case '\b': out.append("\\b"); break;
+                case '\f': out.append("\\f"); break;
+                default:
+                    if (c < 0x20) {
+                        out.append("\\u00").append(String.format("%02x", (int) c));
+                    } else {
+                        out.append(c);
+                    }
             }
         }
         return out.toString();
