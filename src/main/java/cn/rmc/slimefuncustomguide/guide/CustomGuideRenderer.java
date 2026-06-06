@@ -45,7 +45,7 @@ public class CustomGuideRenderer {
     public void openMainMenu(Player player, CustomGuideHistory history,
                              SlimefunGuideMode mode, int page) {
         CustomCategory dummyRoot = new CustomCategory("_root", "Root",
-                new IconSource(IconType.VANILLA, "BOOK"), null, 1, 0);
+                new IconSource(IconType.VANILLA, "BOOK"), null, 1, 0, false);
         for (CustomCategory cat : plugin.getRootCategories()) {
             dummyRoot.addChild(cat);
         }
@@ -173,7 +173,7 @@ public class CustomGuideRenderer {
 
     private ItemStack buildCategoryItem(CustomCategory category, Player player,
                                          int page, int maxPage) {
-        Optional<ItemStack> optIcon = IconParser.parse(category.getIconSource(), plugin.getLogger());
+        Optional<ItemStack> optIcon = IconParser.parse(category.getIconSource(), plugin.getLogger(), category.isGlow());
         ItemStack icon = optIcon.orElse(new ItemStack(Material.BOOK));
 
         return new CustomItemStack(icon, meta -> {
@@ -188,7 +188,7 @@ public class CustomGuideRenderer {
     }
 
     private ItemStack buildPlaceholderItem(CustomPlaceholderEntry entry) {
-        Optional<ItemStack> optIcon = IconParser.parse(entry.getIconSource(), plugin.getLogger());
+        Optional<ItemStack> optIcon = IconParser.parse(entry.getIconSource(), plugin.getLogger(), entry.isGlow());
         ItemStack icon = optIcon.orElse(new ItemStack(Material.GRAY_STAINED_GLASS_PANE));
 
         return new CustomItemStack(icon, meta -> {
