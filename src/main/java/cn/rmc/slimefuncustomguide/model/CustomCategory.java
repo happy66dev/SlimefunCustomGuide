@@ -13,6 +13,7 @@ public class CustomCategory implements GuideTreeNode {
     private final List<String> lore;
     private final int page;
     private final int slot;
+    private final boolean glow;
     private final List<GuideTreeNode> children;
 
     private int childrenCount;
@@ -20,13 +21,14 @@ public class CustomCategory implements GuideTreeNode {
     private int totalItemsCount;
 
     public CustomCategory(String key, String display, IconSource icon,
-                          List<String> lore, int page, int slot) {
+                          List<String> lore, int page, int slot, boolean glow) {
         this.key = key;
         this.display = display != null ? display : key;
         this.icon = icon;
         this.lore = lore != null ? new ArrayList<>(lore) : Collections.<String>emptyList();
         this.page = page;
         this.slot = slot;
+        this.glow = glow;
         this.children = new ArrayList<>();
     }
 
@@ -43,6 +45,7 @@ public class CustomCategory implements GuideTreeNode {
     @Override public int getSlot() { return slot; }
 
     public IconSource getIconSource() { return icon; }
+    public boolean isGlow() { return glow; }
     public void addChild(GuideTreeNode child) { children.add(child); }
     public List<GuideTreeNode> getChildren() { return Collections.unmodifiableList(children); }
 

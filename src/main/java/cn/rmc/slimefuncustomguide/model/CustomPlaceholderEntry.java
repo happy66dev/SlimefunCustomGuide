@@ -12,14 +12,16 @@ public class CustomPlaceholderEntry implements GuideTreeNode {
     private final List<String> lore;
     private final int page;
     private final int slot;
+    private final boolean glow;
 
     public CustomPlaceholderEntry(IconSource icon, String display,
-                                  List<String> lore, int page, int slot) {
+                                  List<String> lore, int page, int slot, boolean glow) {
         this.icon = icon;
         this.display = display != null ? display : "";
         this.lore = lore != null ? new ArrayList<>(lore) : Collections.<String>emptyList();
         this.page = page;
         this.slot = slot;
+        this.glow = glow;
     }
 
     public IconSource getIconSource() { return icon; }
@@ -33,4 +35,5 @@ public class CustomPlaceholderEntry implements GuideTreeNode {
     @Override public List<String> getLore() { return Collections.unmodifiableList(lore); }
     @Override public int getPage() { return page; }
     @Override public int getSlot() { return slot; }
+    public boolean isGlow() { return glow; }
 }
