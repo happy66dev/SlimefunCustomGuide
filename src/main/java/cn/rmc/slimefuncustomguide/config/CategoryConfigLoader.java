@@ -51,8 +51,9 @@ public final class CategoryConfigLoader {
         List<String> lore = section.getStringList("lore");
         int page = Math.max(1, section.getInt("page", 1));
         int slot = section.getInt("slot", -1);
+        boolean glow = section.getBoolean("glow", false);
 
-        CustomCategory category = new CustomCategory(key, display, icon, lore, page, slot);
+        CustomCategory category = new CustomCategory(key, display, icon, lore, page, slot, glow);
 
         parseItems(category, section, logger);
 
@@ -148,8 +149,9 @@ public final class CategoryConfigLoader {
 
                 int page = Math.max(1, getInt(data, "page", 1));
                 int slot = getInt(data, "slot", -1);
+                boolean glow = getBoolean(data, "glow", false);
                 parent.addChild(new CustomPlaceholderEntry(
-                        new IconSource(iconType, iconId), display, lore, page, slot));
+                        new IconSource(iconType, iconId), display, lore, page, slot, glow));
             }
         }
     }
@@ -157,6 +159,11 @@ public final class CategoryConfigLoader {
     private static int getInt(Map<?, ?> map, String key, int defaultValue) {
         Object val = map.get(key);
         return val instanceof Number ? ((Number) val).intValue() : defaultValue;
+    }
+
+    private static boolean getBoolean(Map<?, ?> map, String key, boolean defaultValue) {
+        Object val = map.get(key);
+        return val instanceof Boolean ? ((Boolean) val) : defaultValue;
     }
 
     private static void calculateStats(List<CustomCategory> roots) {
