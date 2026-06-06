@@ -61,8 +61,9 @@ public final class CustomGuidePlugin extends JavaPlugin implements SlimefunAddon
         this.rootCategories = CategoryConfigLoader.load(file, getLogger());
         if (rootCategories.isEmpty()) {
             getLogger().warning("categories.yml is empty or missing");
+        } else {
+            getLogger().info("Reloaded " + rootCategories.size() + " root categories");
         }
-        getLogger().info("Reloaded " + rootCategories.size() + " root categories");
     }
 
     public List<CustomCategory> getRootCategories() {

@@ -67,7 +67,7 @@ public class CustomGuideCommand implements CommandExecutor, TabCompleter {
         List<ItemGroup> itemGroups = Slimefun.getRegistry().getAllItemGroups();
         YamlConfiguration yaml = new YamlConfiguration();
         ConfigurationSection root = yaml.createSection("categories");
-        int slotCounter = 10;
+        int slotCounter = 0;
         int pageCounter = 1;
 
         Map<NestedItemGroup, List<SubItemGroup>> nestedMap = new LinkedHashMap<>();
@@ -112,8 +112,8 @@ public class CustomGuideCommand implements CommandExecutor, TabCompleter {
             groupSection.set("page", pageCounter);
             groupSection.set("slot", slotCounter);
             slotCounter++;
-            if (slotCounter > 45) {
-                slotCounter = 10;
+            if (slotCounter >= 36) {
+                slotCounter = 0;
                 pageCounter++;
             }
 
@@ -129,7 +129,7 @@ public class CustomGuideCommand implements CommandExecutor, TabCompleter {
 
             if (!items.isEmpty()) {
                 List<Map<String, Object>> itemList = new ArrayList<>();
-                int itemSlot = 10;
+                int itemSlot = 0;
                 int itemPage = 1;
                 for (SlimefunItem sfItem : items) {
                     Map<String, Object> itemMap = new LinkedHashMap<>();
@@ -138,8 +138,8 @@ public class CustomGuideCommand implements CommandExecutor, TabCompleter {
                     itemMap.put("slot", itemSlot);
                     itemList.add(itemMap);
                     itemSlot++;
-                    if (itemSlot > 45) {
-                        itemSlot = 10;
+                    if (itemSlot >= 36) {
+                        itemSlot = 0;
                         itemPage++;
                     }
                 }
