@@ -242,6 +242,10 @@ public class CustomGuideRenderer {
     }
 
     int calculateMaxPage(List<GuideTreeNode> children) {
-        return 1;
+        int max = 1;
+        for (GuideTreeNode child : children) {
+            if (child.getPage() > max) max = child.getPage();
+        }
+        return max;
     }
 }

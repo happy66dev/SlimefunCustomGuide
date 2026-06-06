@@ -14,6 +14,8 @@ import java.util.logging.Logger;
 
 public final class CategoryConfigLoader {
 
+    private static final int MAX_DEPTH = 30;
+
     private CategoryConfigLoader() {}
 
     public static List<CustomCategory> load(File categoriesFile, Logger logger) {
@@ -33,7 +35,7 @@ public final class CategoryConfigLoader {
         for (String key : section.getKeys(false)) {
             ConfigurationSection sub = section.getConfigurationSection(key);
             if (sub != null) {
-                CustomCategory cat = parseCategory(key, sub, logger);
+                CustomCategory cat = parseCategory(key, sub, logger, 0);
                 if (cat != null) roots.add(cat);
             }
         }
@@ -41,7 +43,11 @@ public final class CategoryConfigLoader {
         return roots;
     }
 
-    private static CustomCategory parseCategory(String key, ConfigurationSection section, Logger logger) {
+    private static CustomCategory parseCategory(String key, ConfigurationSection section, Logger logger, int depth) {
+        if (depth > MAX_DEPTH) {
+            logger.log(Level.WARNING, "Category [{0}] exceeds max depth of {1}, skipped", new Object[]{key, MAX_DEPTH});
+            return null;
+        }
         String display = section.getString("display");
         IconSource icon = parseIconSource(section, logger, key);
         if (icon == null) {
@@ -62,7 +68,7 @@ public final class CategoryConfigLoader {
             if (isReservedKey(subKey)) continue;
             ConfigurationSection subSection = section.getConfigurationSection(subKey);
             if (subSection != null) {
-                CustomCategory sub = parseCategory(subKey, subSection, logger);
+                CustomCategory sub = parseCategory(subKey, subSection, logger, depth + 1);
                 if (sub != null) category.addChild(sub);
             }
         }
@@ -86,7 +92,7 @@ public final class CategoryConfigLoader {
             return null;
         }
         try {
-            return new IconSource(IconType.valueOf(typeStr.toUpperCase()), id);
+            return new IconSource(IconType.valueOf(typeStr.toUpperCase(Locale.ENGLISH)), id);
         } catch (IllegalArgumentException e) {
             logger.log(Level.WARNING, "Category [{0}] invalid icon type: {1}", new Object[]{context, typeStr});
             return null;
@@ -103,9 +109,19 @@ public final class CategoryConfigLoader {
 
             if (idObj != null) {
                 String slimefunId = idObj.toString();
-                NamespacedKey key = slimefunId.contains(":")
-                        ? Objects.requireNonNull(NamespacedKey.fromString(slimefunId))
-                        : new NamespacedKey("slimefun", slimefunId);
+                NamespacedKey key = null;
+                try {
+                    key = slimefunId.contains(":")
+                            ? NamespacedKey.fromString(slimefunId)
+                            : new NamespacedKey("slimefun", slimefunId);
+                } catch (IllegalArgumentException e) {
+                    logger.log(Level.WARNING, "Invalid item ID: {0}", slimefunId);
+                    continue;
+                }
+                if (key == null) {
+                    logger.log(Level.WARNING, "Could not parse item ID: {0}", slimefunId);
+                    continue;
+                }
 
                 SlimefunItem sfItem = SlimefunItem.getById(key.toString());
                 if (sfItem == null) sfItem = SlimefunItem.getById(slimefunId);
@@ -121,7 +137,12 @@ public final class CategoryConfigLoader {
 
             } else if (placeholderObj instanceof Map) {
                 Map<?, ?> data = (Map<?, ?>) placeholderObj;
-                Map<?, ?> iconData = (Map<?, ?>) data.get("icon");
+                Object iconObj = data.get("icon");
+                if (!(iconObj instanceof Map)) {
+                    logger.warning("Placeholder icon is not a map, skipped");
+                    continue;
+                }
+                Map<?, ?> iconData = (Map<?, ?>) iconObj;
                 if (iconData == null) {
                     logger.warning("Placeholder missing icon, skipped");
                     continue;
@@ -135,8 +156,11 @@ public final class CategoryConfigLoader {
                 }
 
                 IconType iconType;
-                try { iconType = IconType.valueOf(typeStr.toUpperCase()); }
-                catch (IllegalArgumentException e) { continue; }
+                try { iconType = IconType.valueOf(typeStr.toUpperCase(Locale.ENGLISH)); }
+                catch (IllegalArgumentException e) {
+                    logger.log(Level.WARNING, "Placeholder icon type invalid: {0}", typeStr);
+                    continue;
+                }
 
                 String display = (String) data.get("display");
 

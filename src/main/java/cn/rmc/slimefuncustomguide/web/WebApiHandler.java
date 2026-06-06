@@ -374,47 +374,50 @@ public class WebApiHandler implements HttpHandler {
         if (query != null) {
             for (String param : query.split("&")) {
                 if (param.startsWith("q=")) {
-                    try {
-                        q = URLDecoder.decode(param.substring(2), StandardCharsets.UTF_8.name()).toLowerCase();
-                    } catch (UnsupportedEncodingException e) {
-                        q = param.substring(2).toLowerCase();
-                    }
+                    q = URLDecoder.decode(param.substring(2), StandardCharsets.UTF_8).toLowerCase();
                 }
             }
+        }
+
+        if (q.isEmpty()) {
+            byte[] bytes = "{\"results\":[],\"hint\":\"enter a search query\"}".getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.getResponseBody().close();
+            return;
         }
 
         StringBuilder sb = new StringBuilder("{\"results\":[");
         boolean first = true;
         boolean truncated = false;
 
-        if (!q.isEmpty()) {
-            for (Material mat : Material.values()) {
-                if (mat.isItem() && mat.name().toLowerCase().contains(q)) {
-                    if (!first) sb.append(',');
-                    sb.append("{\"type\":\"VANILLA\",\"id\":\"").append(mat.name());
-                    sb.append("\",\"display\":\"").append(JsonUtil.escape(mat.name())).append("\"}");
-                    first = false;
-                    if (sb.length() > 5000) {
-                        truncated = true;
-                        break;
-                    }
+        for (Material mat : Material.values()) {
+            if (mat.isItem() && mat.name().toLowerCase().contains(q)) {
+                if (!first) sb.append(',');
+                sb.append("{\"type\":\"VANILLA\",\"id\":\"").append(mat.name());
+                sb.append("\",\"display\":\"").append(JsonUtil.escape(mat.name())).append("\"}");
+                first = false;
+                if (sb.length() > 5000) {
+                    truncated = true;
+                    break;
                 }
             }
+        }
 
-            for (SlimefunItem sfItem : Slimefun.getRegistry().getEnabledSlimefunItems()) {
-                String name = sfItem.getItemName();
-                String id = sfItem.getId();
-                if ((name != null && name.toLowerCase().contains(q)) || id.toLowerCase().contains(q)) {
-                    if (!first) sb.append(',');
-                    sb.append("{\"type\":\"SLIMEFUN\",\"id\":\"").append(JsonUtil.escape(id));
-                    sb.append("\",\"display\":\"").append(JsonUtil.escape(name != null ? name : id));
-                    String groupName = sfItem.getItemGroup() != null ? sfItem.getItemGroup().getUnlocalizedName() : "unknown";
-                    sb.append("\",\"group\":\"").append(JsonUtil.escape(groupName)).append("\"}");
-                    first = false;
-                    if (sb.length() > 10000) {
-                        truncated = true;
-                        break;
-                    }
+        for (SlimefunItem sfItem : Slimefun.getRegistry().getEnabledSlimefunItems()) {
+            String name = sfItem.getItemName();
+            String id = sfItem.getId();
+            if ((name != null && name.toLowerCase().contains(q)) || id.toLowerCase().contains(q)) {
+                if (!first) sb.append(',');
+                sb.append("{\"type\":\"SLIMEFUN\",\"id\":\"").append(JsonUtil.escape(id));
+                sb.append("\",\"display\":\"").append(JsonUtil.escape(name != null ? name : id));
+                String groupName = sfItem.getItemGroup() != null ? sfItem.getItemGroup().getUnlocalizedName() : "unknown";
+                sb.append("\",\"group\":\"").append(JsonUtil.escape(groupName)).append("\"}");
+                first = false;
+                if (sb.length() > 10000) {
+                    truncated = true;
+                    break;
                 }
             }
         }

@@ -34,7 +34,7 @@ public class CustomGuideModeOption implements SlimefunGuideOption<Boolean> {
     @Nonnull
     @Override
     public NamespacedKey getKey() {
-        return new NamespacedKey(addon, "custom_guide_mode");
+        return new NamespacedKey(CustomGuidePlugin.getInstance(), "custom_guide_mode");
     }
 
     @Nonnull

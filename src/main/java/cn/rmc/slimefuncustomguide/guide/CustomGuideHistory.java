@@ -16,8 +16,8 @@ public class CustomGuideHistory {
 
     public void push(CustomCategory category, int page) {
         CategoryEntry last = stack.peekLast();
-        if (last != null && last.category == category) {
-            last.page = page;
+        if (last != null && last.getCategory().getKey().equals(category.getKey())) {
+            last.setPage(page);
         } else {
             stack.addLast(new CategoryEntry(category, page));
         }

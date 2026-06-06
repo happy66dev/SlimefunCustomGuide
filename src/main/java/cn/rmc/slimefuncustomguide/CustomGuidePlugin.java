@@ -78,5 +78,5 @@ public final class CustomGuidePlugin extends JavaPlugin implements SlimefunAddon
     public static CustomGuidePlugin getInstance() { return instance; }
 
     @Override public JavaPlugin getJavaPlugin() { return this; }
-    @Override public String getBugTrackerURL() { return null; }
+    @Override public String getBugTrackerURL() { return ""; }
 }
