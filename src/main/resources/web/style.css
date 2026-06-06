@@ -30,9 +30,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
 #left-panel { width: 230px; min-width: 190px; background: #161b22; border-right: 1px solid #21262d; display: flex; flex-direction: column; }
 #left-toolbar { display: flex; gap: 4px; padding: 6px 10px; flex-wrap: wrap; border-bottom: 1px solid #21262d; }
-#tree-container { flex: 1; overflow-y: auto; padding: 6px 0; }
+#tree-scroll { flex: 1; overflow-x: auto; overflow-y: auto; }
+#tree-container { min-width: max-content; }
 #tree-root { list-style: none; }
-#tree-root li { padding: 4px 10px; border-radius: 0; cursor: pointer; user-select: none; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 3px solid transparent; transition: 0.12s; display: flex; align-items: center; gap: 4px; }
+#tree-root li { padding: 4px 10px; border-radius: 0; cursor: pointer; user-select: none; font-size: 13px; white-space: nowrap; border-left: 3px solid transparent; transition: 0.12s; display: flex; align-items: center; gap: 4px; width: max-content; min-width: 100%; }
 #tree-root li:hover { background: #1c2129; border-left-color: #30363d; }
 #tree-root li.active { background: rgba(233,69,96,0.12); border-left-color: #e94560; color: #e94560; }
 #tree-root li .tree-icon { font-size: 12px; flex-shrink: 0; }
@@ -67,12 +68,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .form-group input:focus, .form-group textarea:focus { border-color: #e94560; outline: none; box-shadow: 0 0 0 3px rgba(233,69,96,0.15); }
 .form-group textarea { min-height: 70px; resize: vertical; line-height: 1.4; }
 .form-group input[type="number"] { width: 72px; }
+.form-group input:disabled, .form-group textarea:disabled { opacity: 0.4; cursor: not-allowed; }
 .color-preview { margin-top: 5px; font-size: 12px; min-height: 18px; line-height: 1.5; word-break: break-all; }
 .color-preview .mc-color { display: inline; }
 .icon-row { display: flex; align-items: center; gap: 8px; }
 .icon-tag { display: inline-block; background: #0d1117; padding: 4px 10px; border-radius: 4px; font-size: 12px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid #30363d; color: #58a6ff; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; }
 .form-row { display: flex; gap: 24px; }
-.form-actions { padding-top: 8px; border-top: 1px solid #21262d; }
+.form-actions { padding-top: 8px; border-top: 1px solid #21262d; display: flex; gap: 8px; }
 .empty-hint { color: #484f58; font-size: 13px; text-align: center; margin-top: 40px; line-height: 1.8; }
 .empty-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.5; }
 
@@ -124,7 +126,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .dragging { opacity: 0.4; cursor: grabbing; }
 .drag-over { border-color: #e94560 !important; background: rgba(233,69,96,0.12) !important; transform: scale(1.02); }
 
-::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #484f58; }

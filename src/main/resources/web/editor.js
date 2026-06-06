@@ -108,11 +108,19 @@ var Dialog = {
 };
 
 var state = {
-  categories: [], selectedCategory: null, selectedNodeIndex: -1, selectedNode: null,
+  categories: [], selectedCategory: null, selectedNode: null,
   currentPage: 1, pickerTarget: null, dirty: false
 };
 
 function $(id) { return document.getElementById(id); }
+
+function isRootCategory(node) {
+  if (!node || !state.categories) return false;
+  for (var i = 0; i < state.categories.length; i++) {
+    if (state.categories[i] === node) return true;
+  }
+  return false;
+}
 
 function markDirty() {
   if (!state.dirty) { state.dirty = true; updateSaveStatus(); }
@@ -138,6 +146,20 @@ async function loadCategories() {
   } catch(e) { Toast.show('无法连接到服务器', 'error'); }
 }
 
+async function discardChanges() {
+  Dialog.confirm('放弃所有未保存的修改？此操作会从服务器重新加载配置。', function(ok) {
+    if (!ok) return;
+    loadCategories().then(function() {
+      state.selectedCategory = null;
+      state.selectedNode = null;
+      state.currentPage = 1;
+      renderGrid();
+      renderEditor();
+      Toast.show('已从服务器重新加载', 'info');
+    });
+  });
+}
+
 function renderTree() {
   var root = $('tree-root');
   root.innerHTML = '';
@@ -156,7 +178,7 @@ function buildTreeItem(cat, index, parentRef, depth) {
   li.innerHTML = '<span class="tree-icon">' + icon + '</span><span class="tree-label" title="' + MC.strip(cat.display||cat.key) + '">' + MC.parseToHtml(cat.display||cat.key) + '</span>' + (totalChildren > 0 ? '<span class="tree-badge">' + totalChildren + '</span>' : '');
 
   li.onclick = function(e) { e.stopPropagation(); selectCategory(cat, index, parentRef); };
-  if (state.selectedCategory === cat) li.classList.add('active');
+  if (state.selectedNode === cat) li.classList.add('active');
 
   if (hasChildren) {
     var ul = document.createElement('ul');
@@ -167,10 +189,14 @@ function buildTreeItem(cat, index, parentRef, depth) {
 }
 
 function selectCategory(cat, index, parentRef) {
-  state.selectedCategory = cat;
-  state.selectedNode = null;
-  state.selectedNodeIndex = -1;
-  state.currentPage = 1;
+  state.selectedNode = cat;
+  if (parentRef) {
+    state.selectedCategory = parentRef;
+    state.currentPage = cat.page || 1;
+  } else {
+    state.selectedCategory = cat;
+    state.currentPage = 1;
+  }
   renderTree();
   renderGrid();
   renderEditor();
@@ -287,9 +313,9 @@ function swapItems(fromPage, fromSlot, toPage, toSlot) {
 
 function selectGridItem(item, idx) {
   state.selectedNode = item;
-  state.selectedNodeIndex = idx;
   renderGrid();
   renderEditor();
+  renderTree();
 }
 
 function renderEditor() {
@@ -299,10 +325,15 @@ function renderEditor() {
   $('editor-empty').style.display = 'none';
 
   var isItem = node.type === 'ITEM';
+  var isRoot = isRootCategory(node);
+
   $('edit-display').value = node.display || '';
-  $('edit-display').disabled = isItem;
+  $('edit-display').disabled = isItem || isRoot;
   $('edit-lore').value = (node.lore || []).join('\n');
+  $('edit-lore').disabled = isItem || isRoot;
   $('edit-glow').checked = !!node.glow;
+  $('edit-glow').disabled = isItem || isRoot;
+  $('btn-pick-icon').style.display = (isItem || isRoot) ? 'none' : '';
   $('edit-page').value = node.page || 1;
 
   updateDisplayPreview();
@@ -333,10 +364,12 @@ function updateSelection() {
   var node = state.selectedNode;
   if (!node) return;
   var isItem = node.type === 'ITEM';
-  if (!isItem) node.display = $('edit-display').value;
-  node.lore = $('edit-lore').value.split('\n');
-  node.glow = $('edit-glow').checked;
+  var isRoot = isRootCategory(node);
+  if (!isItem && !isRoot) node.display = $('edit-display').value;
+  if (!isItem && !isRoot) node.lore = $('edit-lore').value.split('\n');
+  if (!isItem && !isRoot) node.glow = $('edit-glow').checked;
   node.page = parseInt($('edit-page').value) || 1;
+  state.currentPage = node.page;
   updateDisplayPreview();
   updateLorePreview();
   markDirty();
@@ -351,13 +384,12 @@ function deleteSelected() {
   if (!state.selectedNode || !state.selectedCategory) return;
   Dialog.confirm('确定要删除此项吗？此操作无法撤销。', function(ok) {
     if (!ok) return;
-    if (state.selectedNode.type === 'CATEGORY' || state.selectedNode.icon) {
+    if (state.selectedNode.type === 'CATEGORY') {
       state.selectedCategory.children = (state.selectedCategory.children || []).filter(function(c) { return c !== state.selectedNode; });
     } else {
       state.selectedCategory.items = (state.selectedCategory.items || []).filter(function(it) { return it !== state.selectedNode; });
     }
     state.selectedNode = null;
-    state.selectedNodeIndex = -1;
     markDirty();
     renderGrid();
     renderTree();
@@ -375,9 +407,9 @@ function addCategory() {
     state.selectedCategory.children.push(newCat);
     markDirty();
     renderTree();
-    state.selectedCategory = newCat;
-    state.selectedNode = null;
+    state.selectedNode = newCat;
     renderGrid();
+    renderEditor();
     Toast.show('已添加分类: ' + MC.strip(key), 'success');
   });
 }
