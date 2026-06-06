@@ -404,7 +404,7 @@ public class WebApiHandler implements HttpHandler {
             if (mat.isItem() && mat.name().toLowerCase().contains(q)) {
                 if (!first) sb.append(',');
                 sb.append("{\"type\":\"VANILLA\",\"id\":\"").append(mat.name());
-                sb.append("\",\"display\":\"").append(JsonUtil.escape(mat.name())).append("\"}");
+                sb.append("\",\"display\":\"").append(JsonUtil.escape(materialName(mat))).append("\"}");
                 first = false;
                 if (sb.length() > 5000) {
                     truncated = true;
@@ -457,6 +457,18 @@ public class WebApiHandler implements HttpHandler {
         exchange.sendResponseHeaders(200, bytes.length);
         exchange.getResponseBody().write(bytes);
         exchange.getResponseBody().close();
+    }
+
+    private static String materialName(Material mat) {
+        String name = mat.name().replace('_', ' ').toLowerCase();
+        StringBuilder sb = new StringBuilder();
+        boolean capitalize = true;
+        for (char c : name.toCharArray()) {
+            if (c == ' ') { sb.append(' '); capitalize = true; }
+            else if (capitalize) { sb.append(Character.toUpperCase(c)); capitalize = false; }
+            else { sb.append(c); }
+        }
+        return sb.toString();
     }
 
 }

@@ -6,6 +6,22 @@ var MC = {
     while (i < text.length) {
       if (text[i] === '\u00a7' || text[i] === '&') {
         var code = text[i+1];
+        if ((code && (code === 'x' || code === 'X')) && i + 13 < text.length) {
+          var marker = text[i];
+          var hex = '';
+          var validHex = true;
+          for (var h = 2; h <= 13; h += 2) {
+            if (text[i + h] !== marker) { validHex = false; break; }
+            var hexDigit = text[i + h + 1];
+            if (!/[0-9a-fA-F]/.test(hexDigit)) { validHex = false; break; }
+            hex += hexDigit;
+          }
+          if (validHex) {
+            style += 'color:#' + hex + ';';
+            i += 14;
+            continue;
+          }
+        }
         if (code && '0123456789abcdefABCDEFklmno'.indexOf(code) >= 0) {
           code = code.toLowerCase();
           if (code === 'r') style = '';
@@ -27,6 +43,16 @@ var MC = {
     if (!text) return '';
     var out = '', i = 0;
     while (i < text.length) {
+      if ((text[i] === '\u00a7' || text[i] === '&') && (text[i+1] === 'x' || text[i+1] === 'X') && i + 13 < text.length) {
+        var marker = text[i];
+        var validHex = true;
+        for (var h = 2; h <= 13; h += 2) {
+          if (text[i + h] !== marker) { validHex = false; break; }
+          var hexDigit = text[i + h + 1];
+          if (!/[0-9a-fA-F]/.test(hexDigit)) { validHex = false; break; }
+        }
+        if (validHex) { i += 14; continue; }
+      }
       if ((text[i] === '\u00a7' || text[i] === '&') && '0123456789abcdefABCDEFklmno'.indexOf(text[i+1]) >= 0) { i += 2; continue; }
       out += text[i]; i++;
     }

@@ -42,6 +42,13 @@ public class CustomGuideListener implements Listener {
         if (!plugin.isCustomGuideEnabled()) return;
 
         ItemStack guide = event.getGuide();
+
+        if (player.isSneaking()) {
+            event.setCancelled(true);
+            CustomGuideSettings.openSettings(player, guide);
+            return;
+        }
+
         if (!isCustomMode(guide)) return;
 
         event.setCancelled(true);
@@ -53,13 +60,9 @@ public class CustomGuideListener implements Listener {
                     ? SlimefunGuideMode.CHEAT_MODE
                     : SlimefunGuideMode.SURVIVAL_MODE;
 
-            if (player.isSneaking()) {
-                CustomGuideSettings.openSettings(player, guide);
-            } else {
-                history.clear();
-                history.setMainMenuPage(1);
-                renderer.openMainMenu(player, history, mode, 1);
-            }
+            history.clear();
+            history.setMainMenuPage(1);
+            renderer.openMainMenu(player, history, mode, 1);
         });
     }
 
