@@ -67,7 +67,7 @@ public class CustomGuideRenderer {
         menu.addMenuOpeningHandler(SoundEffect.GUIDE_BUTTON_CLICK_SOUND::playFor);
 
         renderHeader(player, menu, history, mode);
-        renderContent(menu, children, player, history, mode, page, maxPage);
+        renderContent(menu, children, player, history, mode, page, maxPage, category);
         renderFooter(menu, player, page, maxPage, history, mode, category);
 
         menu.open(player);
@@ -136,7 +136,8 @@ public class CustomGuideRenderer {
 
     private void renderContent(ChestMenu menu, List<GuideTreeNode> children,
                                 Player player, CustomGuideHistory history,
-                                SlimefunGuideMode mode, int page, int maxPage) {
+                                SlimefunGuideMode mode, int page, int maxPage,
+                                CustomCategory category) {
         for (GuideTreeNode child : children) {
             if (child.getPage() != page) continue;
             int slot = child.getSlot();
@@ -163,9 +164,20 @@ public class CustomGuideRenderer {
                 });
             } else if (child.getType() == TreeNodeType.ITEM) {
                 menu.addMenuClickHandler(absSlot, (pl, s, is, action) -> {
-                    PlayerProfile.get(pl, profile ->
+                    CustomCategory currentCat = category;
+                    if (currentCat.getKey().equals(ROOT_KEY)) {
+                        currentCat = null;
+                    }
+                    final CustomCategory returnCat = currentCat;
+                    final int returnPage = page;
+                    plugin.getServer().getScheduler().runTask(plugin, () -> {
+                        PlayerProfile.get(pl, profile -> {
+                            plugin.getItemDetailReturns().put(pl,
+                                    new CustomGuidePlugin.ItemDetailReturn(returnCat, returnPage, mode));
                             SlimefunGuide.displayItem(profile,
-                                    ((CustomItemEntry) child).getSlimefunItem(), true));
+                                    ((CustomItemEntry) child).getSlimefunItem(), false);
+                        });
+                    });
                     return false;
                 });
             } else {

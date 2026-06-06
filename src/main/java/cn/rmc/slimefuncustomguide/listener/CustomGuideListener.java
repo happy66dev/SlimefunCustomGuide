@@ -14,6 +14,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -89,7 +90,26 @@ public class CustomGuideListener implements Listener {
     public void removeHistory(Player player) { histories.remove(player); }
 
     @EventHandler
+    public void onInventoryClose(InventoryCloseEvent e) {
+        CustomGuidePlugin.ItemDetailReturn ret = plugin.getItemDetailReturns().get(e.getPlayer());
+        if (ret == null) return;
+        Player p = (Player) e.getPlayer();
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (p.getOpenInventory().getTopInventory().getSize() == 0) {
+                plugin.getItemDetailReturns().remove(p);
+                CustomGuideHistory history = histories.computeIfAbsent(p, k -> new CustomGuideHistory());
+                if (ret.category != null) {
+                    renderer.openMenu(p, history, ret.mode, ret.category, ret.page);
+                } else {
+                    renderer.openMainMenu(p, history, ret.mode, ret.page);
+                }
+            }
+        });
+    }
+
+    @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
         histories.remove(e.getPlayer());
+        plugin.getItemDetailReturns().remove(e.getPlayer());
     }
 }

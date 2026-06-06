@@ -7,17 +7,22 @@ import cn.rmc.slimefuncustomguide.model.CustomCategory;
 import cn.rmc.slimefuncustomguide.web.WebApiHandler;
 import cn.rmc.slimefuncustomguide.web.WebServer;
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon;
+import io.github.thebusybiscuit.slimefun4.core.guide.SlimefunGuideMode;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class CustomGuidePlugin extends JavaPlugin implements SlimefunAddon {
 
     private static CustomGuidePlugin instance;
     private volatile List<CustomCategory> rootCategories;
     private WebServer webServer;
+    private final Map<Player, ItemDetailReturn> itemDetailReturns = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
@@ -76,8 +81,21 @@ public final class CustomGuidePlugin extends JavaPlugin implements SlimefunAddon
         return getConfig().getBoolean("enable-custom-guide", true);
     }
 
+    public Map<Player, ItemDetailReturn> getItemDetailReturns() { return itemDetailReturns; }
+
     public static CustomGuidePlugin getInstance() { return instance; }
 
     @Override public JavaPlugin getJavaPlugin() { return this; }
     @Override public String getBugTrackerURL() { return ""; }
+
+    public static class ItemDetailReturn {
+        public final CustomCategory category;
+        public final int page;
+        public final SlimefunGuideMode mode;
+        public ItemDetailReturn(CustomCategory category, int page, SlimefunGuideMode mode) {
+            this.category = category;
+            this.page = page;
+            this.mode = mode;
+        }
+    }
 }
