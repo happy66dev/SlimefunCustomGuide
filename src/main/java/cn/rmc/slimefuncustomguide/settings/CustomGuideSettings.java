@@ -1,6 +1,5 @@
 package cn.rmc.slimefuncustomguide.settings;
 
-import cn.rmc.slimefuncustomguide.listener.CustomGuideListener;
 import io.github.thebusybiscuit.slimefun4.core.guide.SlimefunGuide;
 import io.github.thebusybiscuit.slimefun4.core.guide.SlimefunGuideMode;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
@@ -53,7 +52,6 @@ public final class CustomGuideSettings {
         ));
         menu.addMenuClickHandler(4, ChestMenuUtils.getEmptyClickHandler());
 
-        boolean isCustom = CustomGuideListener.isCustomMode(guide);
         ItemStack modeItem = modeOption.getDisplayItem(p, guide).orElse(new ItemStack(Material.BARRIER));
         menu.addItem(20, modeItem);
         menu.addMenuClickHandler(20, (pl, s, is, action) -> {

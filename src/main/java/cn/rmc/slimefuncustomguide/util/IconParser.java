@@ -64,9 +64,15 @@ public final class IconParser {
             logger.warning("SLIMEFUN icon ID is empty");
             return Optional.empty();
         }
-        NamespacedKey key = id.contains(":")
-                ? NamespacedKey.fromString(id)
-                : new NamespacedKey(Slimefun.instance(), id);
+        NamespacedKey key = null;
+        try {
+            key = id.contains(":")
+                    ? NamespacedKey.fromString(id)
+                    : new NamespacedKey(Slimefun.instance(), id);
+        } catch (IllegalArgumentException e) {
+            logger.log(Level.WARNING, "Invalid Slimefun ID format: {0}", id);
+            return Optional.empty();
+        }
         if (key == null) {
             logger.log(Level.WARNING, "Invalid Slimefun ID: {0}", id);
             return Optional.empty();
