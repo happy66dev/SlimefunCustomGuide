@@ -13,15 +13,15 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-package cn.rmc.slimefuncustomguide.settings;
+package cn.rmc.slimefunweaver.settings;
 
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon;
 import io.github.thebusybiscuit.slimefun4.core.guide.SlimefunGuide;
 import io.github.thebusybiscuit.slimefun4.core.guide.SlimefunGuideMode;
 import io.github.thebusybiscuit.slimefun4.core.guide.options.SlimefunGuideOption;
 import io.github.thebusybiscuit.slimefun4.core.guide.options.SlimefunGuideSettings;
-import cn.rmc.slimefuncustomguide.CustomGuidePlugin;
-import cn.rmc.slimefuncustomguide.listener.CustomGuideListener;
+import cn.rmc.slimefunweaver.SlimefunWeaver;
+import cn.rmc.slimefunweaver.listener.CustomGuideListener;
 import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -41,7 +41,7 @@ public class CustomGuideModeOption implements SlimefunGuideOption<Boolean> {
     @Nonnull
     @Override
     public SlimefunAddon getAddon() {
-        return CustomGuidePlugin.getInstance();
+        return SlimefunWeaver.getInstance();
     }
 
     @Nonnull
@@ -74,7 +74,7 @@ public class CustomGuideModeOption implements SlimefunGuideOption<Boolean> {
         if (!isSlimefunGuide(guide)) return;
         if (CustomGuideListener.isCustomMode(guide)) {
             CustomGuideListener.clearCustomMode(guide);
-            CustomGuidePlugin plugin = CustomGuidePlugin.getInstance();
+            SlimefunWeaver plugin = SlimefunWeaver.getInstance();
             if (plugin != null && plugin.getGuideListener() != null) {
                 plugin.getGuideListener().clearAllState(p);
             }

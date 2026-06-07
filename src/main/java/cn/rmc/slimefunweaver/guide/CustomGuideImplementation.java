@@ -13,9 +13,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-package cn.rmc.slimefuncustomguide.guide;
+package cn.rmc.slimefunweaver.guide;
 
-import cn.rmc.slimefuncustomguide.CustomGuidePlugin;
+import cn.rmc.slimefunweaver.SlimefunWeaver;
 import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.api.player.PlayerProfile;
@@ -31,9 +31,9 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 public class CustomGuideImplementation implements SlimefunGuideImplementation {
 
-    private final CustomGuidePlugin plugin;
+    private final SlimefunWeaver plugin;
 
-    public CustomGuideImplementation(CustomGuidePlugin plugin) {
+    public CustomGuideImplementation(SlimefunWeaver plugin) {
         this.plugin = plugin;
     }
 

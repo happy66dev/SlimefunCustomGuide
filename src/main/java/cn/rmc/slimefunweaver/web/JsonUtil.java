@@ -13,9 +13,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-package cn.rmc.slimefuncustomguide.web;
+package cn.rmc.slimefunweaver.web;
 
-import cn.rmc.slimefuncustomguide.model.*;
+import cn.rmc.slimefunweaver.model.*;
 
 import java.util.HashSet;
 import java.util.List;

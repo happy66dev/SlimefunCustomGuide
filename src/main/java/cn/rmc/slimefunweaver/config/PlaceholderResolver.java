@@ -13,10 +13,10 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-package cn.rmc.slimefuncustomguide.config;
+package cn.rmc.slimefunweaver.config;
 
-import cn.rmc.slimefuncustomguide.model.CustomCategory;
-import cn.rmc.slimefuncustomguide.model.GuideTreeNode;
+import cn.rmc.slimefunweaver.model.CustomCategory;
+import cn.rmc.slimefunweaver.model.GuideTreeNode;
 
 import java.util.ArrayList;
 import java.util.List;

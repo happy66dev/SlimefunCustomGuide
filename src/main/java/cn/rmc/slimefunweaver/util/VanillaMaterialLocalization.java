@@ -13,9 +13,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-package cn.rmc.slimefuncustomguide.util;
+package cn.rmc.slimefunweaver.util;
 
-import cn.rmc.slimefuncustomguide.CustomGuidePlugin;
+import cn.rmc.slimefunweaver.SlimefunWeaver;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -55,12 +55,12 @@ public final class VanillaMaterialLocalization {
                     }
                 }
 
-                CustomGuidePlugin.getInstance().getLogger().info("Loaded " + count + " vanilla item localizations from zh_cn.json");
+                SlimefunWeaver.getInstance().getLogger().info("Loaded " + count + " vanilla item localizations from zh_cn.json");
             } else {
-                CustomGuidePlugin.getInstance().getLogger().warning("Could not find zh_cn.json file");
+                SlimefunWeaver.getInstance().getLogger().warning("Could not find zh_cn.json file");
             }
         } catch (Exception e) {
-            CustomGuidePlugin.getInstance().getLogger().log(Level.SEVERE, "Error loading zh_cn.json:", e);
+            SlimefunWeaver.getInstance().getLogger().log(Level.SEVERE, "Error loading zh_cn.json:", e);
         }
 
         initialized = true;

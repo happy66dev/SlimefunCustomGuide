@@ -13,37 +13,42 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-package cn.rmc.slimefuncustomguide.model;
+package cn.rmc.slimefunweaver.model;
 
-import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class CustomItemEntry implements GuideTreeNode {
-    private final String slimefunId;
-    private final SlimefunItem sfItem;
+public class CustomPlaceholderEntry implements GuideTreeNode {
+    private final IconSource icon;
+    private final String display;
+    private final List<String> lore;
     private final int page;
     private final int slot;
+    private final boolean glow;
 
-    public CustomItemEntry(String slimefunId, SlimefunItem sfItem, int page, int slot) {
-        this.slimefunId = slimefunId;
-        this.sfItem = sfItem;
+    public CustomPlaceholderEntry(IconSource icon, String display,
+                                  List<String> lore, int page, int slot, boolean glow) {
+        this.icon = icon;
+        this.display = display != null ? display : "";
+        this.lore = lore != null ? new ArrayList<>(lore) : Collections.<String>emptyList();
         this.page = page;
         this.slot = slot;
+        this.glow = glow;
     }
 
-    public String getSlimefunId() { return slimefunId; }
-    public SlimefunItem getSlimefunItem() { return sfItem; }
+    public IconSource getIconSource() { return icon; }
 
-    @Override public TreeNodeType getType() { return TreeNodeType.ITEM; }
-    @Override public String getDisplay() { return sfItem.getItemName(); }
+    @Override public TreeNodeType getType() { return TreeNodeType.PLACEHOLDER; }
+    @Override public String getDisplay() { return display; }
 
     @Override
-    public ItemStack getIcon(Player player) { return sfItem.getItem().clone(); }
+    public ItemStack getIcon(Player player) { return null; }
 
-    @Override public List<String> getLore() { return Collections.emptyList(); }
+    @Override public List<String> getLore() { return Collections.unmodifiableList(lore); }
     @Override public int getPage() { return page; }
     @Override public int getSlot() { return slot; }
+    public boolean isGlow() { return glow; }
 }

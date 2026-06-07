@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-package cn.rmc.slimefuncustomguide.model;
+package cn.rmc.slimefunweaver.model;
 
 public enum IconType {
     VANILLA, SLIMEFUN, HEAD

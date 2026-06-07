@@ -1,18 +1,18 @@
-name: SlimefunCustomGuide
+﻿name: slimefunweaver
 version: '${project.version}'
-main: cn.rmc.slimefuncustomguide.CustomGuidePlugin
+main: cn.rmc.slimefunweaver.SlimefunWeaver
 api-version: 1.16
 depend:
   - Slimefun
 commands:
-  slimefuncustomguide:
-    description: SlimefunCustomGuide commands
+  slimefunweaver:
+    description: slimefunweaver commands
     usage: /scg <export|reload>
     aliases: [scg]
 permissions:
-  slimefuncustomguide.export:
+  slimefunweaver.export:
     description: Allow exporting categories
     default: op
-  slimefuncustomguide.reload:
+  slimefunweaver.reload:
     description: Allow reloading categories
     default: op
