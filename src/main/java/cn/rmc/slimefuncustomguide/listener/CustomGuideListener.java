@@ -183,6 +183,22 @@ public class CustomGuideListener implements Listener {
 
     public void removeHistory(Player player) { histories.remove(player); }
 
+    public void clearAllState(Player player) {
+        histories.remove(player);
+        plugin.getExternalViewActive().remove(player.getUniqueId());
+        plugin.getScgMenuOpen().remove(player.getUniqueId());
+        plugin.getScgCloseDedup().remove(player.getUniqueId());
+        plugin.getSuppressPush().remove(player.getUniqueId());
+        ItemStack guide = findGuideItem(player);
+        if (guide != null && guide.hasItemMeta()) {
+            ItemMeta meta = guide.getItemMeta();
+            meta.getPersistentDataContainer().remove(MODE_KEY);
+            meta.getPersistentDataContainer().remove(SAVE_KEY);
+            guide.setItemMeta(meta);
+        }
+        CustomGuidePlugin.debug(player, "clearAllState: all SCG state removed");
+    }
+
     public CustomGuideHistory getHistory(Player player) { return histories.get(player); }
 
     @EventHandler

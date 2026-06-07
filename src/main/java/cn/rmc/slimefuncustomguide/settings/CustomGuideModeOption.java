@@ -74,6 +74,10 @@ public class CustomGuideModeOption implements SlimefunGuideOption<Boolean> {
         if (!isSlimefunGuide(guide)) return;
         if (CustomGuideListener.isCustomMode(guide)) {
             CustomGuideListener.clearCustomMode(guide);
+            CustomGuidePlugin plugin = CustomGuidePlugin.getInstance();
+            if (plugin != null && plugin.getGuideListener() != null) {
+                plugin.getGuideListener().clearAllState(p);
+            }
         } else {
             CustomGuideListener.setCustomMode(guide);
         }
