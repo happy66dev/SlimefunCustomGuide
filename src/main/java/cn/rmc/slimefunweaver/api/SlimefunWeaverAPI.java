@@ -20,9 +20,9 @@ import cn.rmc.slimefunweaver.listener.CustomGuideListener;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-public final class slimefunweaverAPI {
+public final class SlimefunWeaverAPI {
 
-    private slimefunweaverAPI() {}
+    private SlimefunWeaverAPI() {}
 
     private static SlimefunWeaver plugin() {
         return SlimefunWeaver.getInstance();

@@ -1,23 +1,26 @@
-# SlimefunCustomGuide
+# SlimefunWeaver
 
-**Slimefun 粘液科技 — 自定义指南书 + 研究 Web 编辑器**
+**Slimefun 粘液科技 — 自定义指南书 + 合成表编辑器 + 研究编辑器**
 
-为 Slimefun4 提供可完全自定义的游戏内指南书界面，以及基于浏览器的研究配置 Web 编辑器。
+为 Slimefun4 提供可完全自定义的游戏内指南书界面、NBT 持久化导航历史、以及基于浏览器的合成表与研究 Web 编辑器。
 
 ---
 
 ## 功能
 
-### 🎮 游戏内
+### 🎮 游戏内指南书
 
 | 功能 | 说明 |
 |---|---|
 | 自定义指南书布局 | 通过 `categories.yml` 自由编排分类、物品、占位符 |
 | 多页分页 | 支持分页展示大量物品 |
-| 物品详情回退导航 | 从物品详情页返回分类时不丢失滚动位置 |
+| **导航历史持久化** | NBT 记录完整浏览路径（分类→物品→嵌套物品），关闭重开直接恢复 |
+| **逐级返回导航** | 物品详情链中左键逐级回退（G→E→C），Shift+左键直接跳回 SCG 分类 |
+| 物品详情嵌套追踪 | 在物品合成表中点击配方物品自动记录到导航链 |
 | 占位符灰度占位 | 未解锁时显示灰度图标，解锁后展示真实物品 |
 | 荧光效果 | 支持分类和物品的 glow 特效 |
-| `/slimefuncustomguide reload` | 热重载 `categories.yml` |
+| **Debug 模式** | `config.yml` 中 `debug: true`，公屏输出导航全链路日志 |
+| `/scg reload` | 热重载 `categories.yml` |
 
 ### 🌐 Web 编辑器
 
@@ -29,8 +32,14 @@
 - 保存自动写入 `categories.yml` 并立即生效
 - 迷你键盘颜色代码拾取器（`&c &l` 格式）
 
+#### 合成表编辑器 (`/recipes.html`)
+- 加载全部 Slimefun 物品合成表
+- 表格视图编辑每个槽位的物品
+- 编辑合成类型（RecipeType）和输出物品
+- 保存自动写入 `categories.yml`
+
 #### 研究编辑器 (`/editor.html`)
-- 加载全部 Slimefun 研究节点（364 条）
+- 加载全部 Slimefun 研究节点
 - **图形化依赖关系图** — 可拖拽平移/缩放
 - **路径追踪着色** — 红=直接前置，黄=间接前置，绿=直接后继，天蓝=间接后继
 - 拖拽连线创建新依赖
@@ -44,11 +53,13 @@
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | `GET` | `/` | 指南书编辑器页面 |
+| `GET` | `/recipes.html` | 合成表编辑器页面 |
+| `GET` | `/editor.html` | 研究编辑器页面 |
 | `GET` | `/style.css` | 编辑器样式 |
 | `GET` | `/editor.js` | 编辑器 JS |
-| `GET` | `/editor.html` | 研究编辑器页面 |
 | `GET` | `/api/categories` | 读取分类 JSON |
 | `PUT` | `/api/categories` | 保存分类到 `categories.yml` |
+| `GET` | `/api/recipes` | 读取全部合成表 |
 | `GET` | `/api/materials?q=` | 搜索原版 + Slimefun 物品 |
 | `GET` | `/api/item-groups` | Slimefun 物品分类列表 |
 | `GET` | `/api/researches` | 读取全部研究 JSON |
@@ -59,16 +70,43 @@
 
 ## 配置
 
-`plugins/SlimefunCustomGuide/config.yml`:
+`plugins/SlimefunWeaver/config.yml`:
 
 ```yaml
-web-editor:
-  enabled: true      # 启用 Web 编辑器
-  bind: 127.0.0.1    # 绑定地址
-  port: 8899         # 监听端口
-
 enable-custom-guide: true  # 启用自定义指南书
+debug: false               # Debug 模式（公屏输出导航日志）
+
+web-editor:
+  enabled: false
+  bind: 127.0.0.1
+  port: 8899
+  token: ""              # 非本地 bind 必须设置
+  editors:
+    categories: false
+    recipes: false
+    researches: false
+  auto-load-recipes: true
+  auto-load-categories: true
 ```
+
+---
+
+## 导航历史 (NBT 持久化)
+
+指南书物品通过 NBT 记录完整浏览路径：
+
+```
+NBT = "1|机器:1|发电机:3|ITEM:COAL_GENERATOR|ITEM:IRON_INGOT"
+       ↑              ↑            ↑                    ↑
+    主菜单第1页    分类:页码      物品ID              嵌套物品ID
+```
+
+| 操作 | 效果 |
+|---|---|
+| 右键指南书 | 直接恢复到最后一个物品详情 |
+| 左键返回 | 逐级回退到上一个物品/分类 |
+| Shift+左键返回 | 直接跳回 SCG 分类页 |
+| ESC 关闭再打开 | 恢复到关闭前位置 |
 
 ---
 
@@ -80,12 +118,12 @@ git clone https://github.com/happy66dev/slimefun4.git
 cd slimefun4 && mvn install -DskipTests && cd ..
 
 # 1. 编译
-git clone https://github.com/happy66dev/SlimefunCustomGuide.git
-cd SlimefunCustomGuide
+git clone https://github.com/happy66dev/SlimefunWeaver.git
+cd SlimefunWeaver
 mvn package -DskipTests
 
 # 2. JAR 位置
-# target/SlimefunCustomGuide-1.0-SNAPSHOT.jar
+# target/SlimefunWeaver-1.0-SNAPSHOT.jar
 ```
 
 ---
@@ -103,26 +141,31 @@ mvn package -DskipTests
 ## 项目结构
 
 ```
-src/main/java/cn/rmc/slimefuncustomguide/
-├── command/         # /slimefuncustomguide 命令
+src/main/java/cn/rmc/slimefunweaver/
+├── api/             # SlimefunWeaverAPI (SF4 软依赖接口)
+├── command/         # /scg 命令
 ├── config/          # YAML 加载 & 占位符解析
 ├── guide/           # 指南书渲染 (Renderer/History/Implementation)
-├── listener/        # 事件监听器
+├── listener/        # 事件监听 & NBT 持久化
 ├── model/           # 数据模型 (Category/Item/Icon/TreeNode)
 ├── settings/        # 指南书模式设置
-├── util/            # 图标解析工具
+├── util/            # 图标解析 & 原版材质本地化
 ├── web/             # Web 服务器 + API
 │   ├── WebServer.java           # HTTP 服务器生命周期
 │   ├── WebApiHandler.java       # / 指南书编辑器路由
-│   ├── ResearchApiHandler.java  # /editor.html 研究编辑器路由
-│   └── JsonUtil.java            # JSON 工具
-└── CustomGuidePlugin.java       # 插件主类
+│   ├── RecipeApiHandler.java    # /recipes.html 合成表编辑器
+│   ├── ResearchApiHandler.java  # /editor.html 研究编辑器
+│   ├── WebSecurity.java        # 安全校验
+│   └── JsonUtil.java           # JSON 工具
+└── SlimefunWeaver.java         # 插件主类
 src/main/resources/
 ├── web/
 │   ├── index.html               # 指南书编辑器 SPA
+│   ├── recipes.html             # 合成表编辑器
 │   ├── research-editor.html     # 研究编辑器 SPA
 │   ├── editor.js / style.css
 ├── categories.yml               # 自定义分类默认配置
+├── zh_cn.json                   # 中文汉化
 ├── config.yml / plugin.yml
 ```
 
@@ -146,4 +189,4 @@ Copyright (C) 2025 **happy** (k666kkk666k@163.com)
 
 ## :star: Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=happy66dev/SlimefunCustomGuide&type=date)](https://star-history.com/#happy66dev/SlimefunCustomGuide)
+[![Star History Chart](https://api.star-history.com/svg?repos=happy66dev/SlimefunWeaver&type=date)](https://star-history.com/#happy66dev/SlimefunWeaver)

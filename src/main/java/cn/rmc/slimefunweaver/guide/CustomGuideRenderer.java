@@ -16,7 +16,7 @@
 package cn.rmc.slimefunweaver.guide;
 
 import cn.rmc.slimefunweaver.SlimefunWeaver;
-import cn.rmc.slimefunweaver.api.slimefunweaverAPI;
+import cn.rmc.slimefunweaver.api.SlimefunWeaverAPI;
 import cn.rmc.slimefunweaver.config.PlaceholderResolver;
 import cn.rmc.slimefunweaver.model.CustomCategory;
 import cn.rmc.slimefunweaver.model.CustomItemEntry;
@@ -117,7 +117,7 @@ public class CustomGuideRenderer {
         menu.addItem(SETTINGS_SLOT, ChestMenuUtils.getMenuButton(player));
         menu.addMenuClickHandler(SETTINGS_SLOT, (pl, s, is, action) -> {
             SlimefunWeaver.debug(pl, "SETTINGS click: marking externalView + opening settings");
-            slimefunweaverAPI.markExternalView(pl);
+            SlimefunWeaverAPI.markExternalView(pl);
             SlimefunGuideSettings.openSettings(pl, pl.getInventory().getItemInMainHand());
             return false;
         });
@@ -126,7 +126,7 @@ public class CustomGuideRenderer {
         menu.addMenuClickHandler(SEARCH_SLOT, (pl, s, is, action) -> {
             pl.closeInventory();
             Slimefun.getLocalization().sendMessage(pl, "guide.search.message");
-            slimefunweaverAPI.markExternalView(pl);
+            SlimefunWeaverAPI.markExternalView(pl);
             ChatInput.waitForPlayer(Slimefun.instance(), pl, msg -> {
                 PlayerProfile.get(pl, profile ->
                         SlimefunGuide.openSearch(profile, msg, mode, true));
@@ -209,7 +209,7 @@ public class CustomGuideRenderer {
                             } else {
                                 SlimefunWeaver.debug(pl, "ITEM click: id=" + ((CustomItemEntry) child).getSlimefunId() +
                                         ", marking externalView");
-                                slimefunweaverAPI.markExternalView(pl);
+                                SlimefunWeaverAPI.markExternalView(pl);
                                 Slimefun.getRegistry().getSlimefunGuide(mode).displayItem(profile, slimefunItem, true);
                             }
                         });
