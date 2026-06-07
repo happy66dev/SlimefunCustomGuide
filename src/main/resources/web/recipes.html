@@ -257,7 +257,17 @@ function snapshotItem(d) {
   }
 }
 
+var pendingSelectTimer = null;
+
 function selectItem(id) {
+  if (pendingSelectTimer) clearTimeout(pendingSelectTimer);
+  if (selectedItemId === id) { doSelectItem(id); return; }
+  $id('center-empty').style.display = 'none';
+  $id('center-panel').innerHTML = '<div style="text-align:center;color:#484f58;padding-top:60px;">加载中...</div>';
+  pendingSelectTimer = setTimeout(function(){ doSelectItem(id); }, 40);
+}
+
+function doSelectItem(id) {
   dlog('SELECT', 'selectItem: ' + id + ' (prev=' + selectedItemId + ')');
   selectedItemId = id;
   var d = itemData[id];
@@ -345,17 +355,24 @@ function renderGrid() {
 function getTypeInfo(key) {
   var found = recipeTypes.find(function(t){return t.key===key;});
   var name = found ? found.name : (key||'');
-  var slots = found && found.slots ? found.slots : 1;
-  var cols = found && found.cols ? found.cols : 1;
   var hasTime = found ? !!found.hasTime : false;
-  return {name:name, slots:slots, cols:cols, hasTime:hasTime};
+  var totalSlots = found && found.slots ? found.slots : 1;
+  if (!found) {
+    if (slots.length === 9) { totalSlots = 9; }
+    else if (slots.length === 4) { totalSlots = 4; }
+    else if (slots.length === 2) { totalSlots = 2; }
+    else if (slots.length > 0) { totalSlots = slots.length; }
+  }
+  var cols = totalSlots === 9 ? 3 : (totalSlots === 4 ? 2 : (totalSlots === 2 ? 2 : 1));
+  return {name:name, slots:totalSlots, cols:cols, hasTime:hasTime};
 }
 
 function renderTypeList() {
   var h = '';
   recipeTypes.forEach(function(t){
+    var builtinTag = t.isBuiltin ? '' : ' <span style="color:#d29922;font-size:9px;">addon</span>';
     h += '<div class="typeopt'+(t.key===currentTypeKey?' active':'')+'" onclick="changeType(\''+escKey(t.key)+'\')">'
-      + esc(t.name) + ' <span class="tns">' + esc(t.key) + '</span></div>';
+      + esc(t.name) + builtinTag + ' <span class="tns">' + esc(t.key) + '</span></div>';
   });
   $id('type-list').innerHTML = h;
   $id('edit-time').value = processingTime || 0;

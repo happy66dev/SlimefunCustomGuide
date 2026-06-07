@@ -231,28 +231,49 @@ public class RecipeApiHandler implements HttpHandler {
     }
 
     private String buildRecipeTypesJson() {
+        Map<String, RecipeType> resolved = resolveBuiltinTypes();
+        Map<String, RecipeTypeInfo> collected = collectAllRecipeTypes(resolved);
         StringBuilder sb = new StringBuilder("{\"types\":[");
         boolean first = true;
-        Map<String, RecipeType> resolved = resolveBuiltinTypes();
-
-        for (String key : BUILTIN_RECIPE_TYPES) {
+        for (RecipeTypeInfo info : collected.values()) {
             if (!first) sb.append(','); first = false;
-            RecipeType rt = resolved.get(key);
-            String name = key;
-            int slots = guessSlots(key);
-            int cols = guessCols(slots);
-            if (rt != null) {
-                name = readDisplayName(rt, key);
-            }
-            sb.append("{\"key\":\"").append(escapeJson(key)).append("\",")
-              .append("\"name\":\"").append(escapeJson(name)).append("\",")
-              .append("\"slots\":").append(slots).append(",")
-              .append("\"cols\":").append(cols).append(",")
-              .append("\"hasTime\":").append(TIMED_RECIPE_TYPES.contains(key))
+            sb.append("{\"key\":\"").append(escapeJson(info.key)).append("\",")
+              .append("\"name\":\"").append(escapeJson(info.name)).append("\",")
+              .append("\"slots\":").append(info.slots).append(",")
+              .append("\"cols\":").append(info.cols).append(",")
+              .append("\"hasTime\":").append(info.hasTime).append(",")
+              .append("\"isBuiltin\":").append(info.isBuiltin)
               .append("}");
         }
         sb.append("]}");
         return sb.toString();
+    }
+
+    private Map<String, RecipeTypeInfo> collectAllRecipeTypes(Map<String, RecipeType> resolved) {
+        Map<String, RecipeTypeInfo> map = new LinkedHashMap<>();
+
+        for (String key : BUILTIN_RECIPE_TYPES) {
+            RecipeType rt = resolved.get(key);
+            String name = readDisplayName(rt, key);
+            int slots = guessSlots(key);
+            map.put(key, new RecipeTypeInfo(key, name, slots, guessCols(slots),
+                TIMED_RECIPE_TYPES.contains(key), true));
+        }
+
+        for (SlimefunItem item : Slimefun.getRegistry().getEnabledSlimefunItems()) {
+            ItemStack[] recipe = item.getRecipe();
+            if (recipe == null || recipe.length == 0) continue;
+            RecipeType rt = item.getRecipeType();
+            if (rt == null) continue;
+            String key = rt.getKey().toString();
+            if (map.containsKey(key)) continue;
+
+            String name = readDisplayName(rt, key);
+            int slots = guessSlots(key);
+            map.put(key, new RecipeTypeInfo(key, name, slots, guessCols(slots), false, false));
+        }
+
+        return map;
     }
 
     private String buildRecipesJson() {
@@ -307,19 +328,16 @@ public class RecipeApiHandler implements HttpHandler {
         }
 
         sb.append("},\"recipeTypes\":[");
+        Map<String, RecipeTypeInfo> allTypes = collectAllRecipeTypes(resolved);
         boolean firstType = true;
-        for (String key : BUILTIN_RECIPE_TYPES) {
+        for (RecipeTypeInfo info : allTypes.values()) {
             if (!firstType) sb.append(','); firstType = false;
-            RecipeType rt = resolved.get(key);
-            String name = key;
-            int slots = guessSlots(key);
-            int cols = guessCols(slots);
-            if (rt != null) name = readDisplayName(rt, key);
-            sb.append("{\"key\":\"").append(escapeJson(key)).append("\",")
-              .append("\"name\":\"").append(escapeJson(name)).append("\",")
-              .append("\"slots\":").append(slots).append(",")
-              .append("\"cols\":").append(cols).append(",")
-              .append("\"hasTime\":").append(TIMED_RECIPE_TYPES.contains(key))
+            sb.append("{\"key\":\"").append(escapeJson(info.key)).append("\",")
+              .append("\"name\":\"").append(escapeJson(info.name)).append("\",")
+              .append("\"slots\":").append(info.slots).append(",")
+              .append("\"cols\":").append(info.cols).append(",")
+              .append("\"hasTime\":").append(info.hasTime).append(",")
+              .append("\"isBuiltin\":").append(info.isBuiltin)
               .append("}");
         }
         sb.append("]}");
@@ -368,6 +386,15 @@ public class RecipeApiHandler implements HttpHandler {
         }
         recipeTypeCache = map;
         return map;
+    }
+
+    private static class RecipeTypeInfo {
+        final String key, name;
+        final int slots, cols;
+        final boolean hasTime, isBuiltin;
+        RecipeTypeInfo(String k, String n, int s, int c, boolean t, boolean b) {
+            key = k; name = n; slots = s; cols = c; hasTime = t; isBuiltin = b;
+        }
     }
 
     private static class StoredRecipesSection {
@@ -602,7 +629,7 @@ public class RecipeApiHandler implements HttpHandler {
         String shortKey = key.contains(":") ? key.substring(key.lastIndexOf(':') + 1) : key;
         switch (shortKey) {
             case "enhanced_crafting_table": case "armor_forge": case "magic_workbench":
-            case "ancient_altar": return 9;
+            case "ancient_altar": case "shaped": case "shapeless": return 9;
             case "smeltery": case "heated_pressure_chamber": case "ore_crusher":
             case "compressor": case "grind_stone": case "juicer": case "gold_pan":
             case "freezer": case "food_fabricator": case "food_composter":
