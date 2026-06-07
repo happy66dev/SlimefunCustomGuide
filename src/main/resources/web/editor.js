@@ -414,36 +414,67 @@ function renderEditor() {
   var isRefCopy = isRef && node.mode === 'copy';
   var readOnly = isItem || isRefCopy;
 
-  $('edit-display').value = node.display || '';
+  var effectiveNode = node;
+  if (isRefCopy) {
+    var resolved = resolveRefCopy(node.ref);
+    if (resolved) effectiveNode = resolved;
+  }
+
+  $('edit-display').value = effectiveNode.display || '';
   $('edit-display').disabled = readOnly;
-  $('edit-lore').value = (node.lore || []).join('\n');
+  $('edit-lore').value = (effectiveNode.lore || []).join('\n');
   $('edit-lore').disabled = readOnly;
-  $('edit-glow').checked = !!node.glow;
+  $('edit-glow').checked = !!effectiveNode.glow;
   $('edit-glow').disabled = readOnly;
   $('btn-pick-icon').style.display = readOnly && !isRef ? 'none' : '';
   $('edit-page').value = node.page || 1;
 
   if (isRef) {
-    $('edit-ref-target').style.display = '';
+    $('edit-ref-target-wrap').style.display = '';
     $('edit-ref-target').value = node.ref || '';
     $('edit-ref-target').disabled = isRefCopy;
-    $('edit-ref-mode').style.display = '';
+    $('edit-ref-mode-wrap').style.display = '';
     $('edit-ref-mode').value = node.mode || 'custom';
     $('edit-ref-mode').disabled = isRefCopy;
   } else {
-    $('edit-ref-target').style.display = 'none';
-    $('edit-ref-mode').style.display = 'none';
+    $('edit-ref-target-wrap').style.display = 'none';
+    $('edit-ref-mode-wrap').style.display = 'none';
   }
 
   updateDisplayPreview();
   updateLorePreview();
 
   var iconDisplay = '';
-  if (node.icon) { iconDisplay = '[' + node.icon.type + '] ' + node.icon.id; }
-  else if (node.id) { iconDisplay = '[ITEM] ' + node.id; }
+  if (effectiveNode.icon) { iconDisplay = '[' + effectiveNode.icon.type + '] ' + effectiveNode.icon.id; }
+  else if (effectiveNode.id) { iconDisplay = '[ITEM] ' + effectiveNode.id; }
   else if (isRef) { iconDisplay = '[REF] \u21b3 ' + (node.ref || '?'); }
   else { iconDisplay = '(无图标)'; }
   $('edit-icon-display').textContent = iconDisplay;
+}
+
+function resolveRefCopy(refPath) {
+  if (!refPath) return null;
+  var parts = refPath.split('/');
+  var cats = state.categories;
+  var found = null;
+  for (var pi = 0; pi < parts.length; pi++) {
+    var matched = false;
+    for (var ci = 0; ci < cats.length; ci++) {
+      if (cats[ci].key === parts[pi]) {
+        found = cats[ci];
+        cats = [];
+        if (found.children) {
+          for (var cj = 0; cj < found.children.length; cj++) {
+            if (found.children[cj].key) cats.push(found.children[cj]);
+          }
+        }
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) return null;
+  }
+  return found;
 }
 
 function updateDisplayPreview() {
@@ -465,6 +496,7 @@ function updateSelection() {
   if (!node) return;
   var isItem = node.type === 'ITEM';
   var isRef = node.type === 'REFERENCE';
+  var prevMode = node.mode;
   var isRefCopy = isRef && node.mode === 'copy';
   if (!isItem && !isRefCopy) node.display = $('edit-display').value;
   if (!isItem && !isRefCopy) node.lore = $('edit-lore').value.split('\n');
@@ -473,6 +505,7 @@ function updateSelection() {
   if (isRef && !isRefCopy) node.mode = $('edit-ref-mode').value;
   node.page = parseInt($('edit-page').value) || 1;
   state.currentPage = node.page;
+  if (isRef && node.mode !== prevMode) renderEditor();
   updateDisplayPreview();
   updateLorePreview();
   markDirty();

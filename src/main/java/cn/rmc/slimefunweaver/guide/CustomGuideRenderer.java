@@ -322,17 +322,34 @@ public class CustomGuideRenderer {
     }
 
     private ItemStack buildReferenceItem(CustomReferenceEntry entry, Player player, int page, int maxPage) {
-        Optional<ItemStack> optIcon = IconParser.parse(entry.getIconSource(), plugin.getLogger(), entry.isGlow());
+        CustomCategory target = entry.isCopyMode() ? findCategoryByKey(plugin.getRootCategories(), entry.getTargetCategoryKey()) : null;
+        IconSource effectiveIcon = (target != null && target.getIconSource() != null) ? target.getIconSource() : entry.getIconSource();
+        boolean effectiveGlow = target != null ? target.isGlow() : entry.isGlow();
+
+        String resolvedDisplay = entry.getDisplay();
+        if (resolvedDisplay == null || resolvedDisplay.isEmpty()) {
+            resolvedDisplay = (target != null) ? target.getDisplay() : null;
+        }
+        if (resolvedDisplay == null || resolvedDisplay.isEmpty()) {
+            resolvedDisplay = "\u21b3 " + entry.getTargetCategoryKey();
+        }
+
+        List<String> resolvedLore = entry.getLore();
+        if (resolvedLore.isEmpty() && target != null) {
+            resolvedLore = target.getLore();
+        }
+
+        final String finalDisplay = resolvedDisplay;
+        final List<String> finalLore = resolvedLore;
+
+        Optional<ItemStack> optIcon = IconParser.parse(effectiveIcon, plugin.getLogger(), effectiveGlow);
         ItemStack icon = optIcon.orElse(new ItemStack(Material.ARROW));
 
         return new CustomItemStack(icon, meta -> {
-            String display = entry.getDisplay();
-            if (display == null || display.isEmpty()) display = "\u21b3 " + entry.getTargetCategoryKey();
-            meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', display));
-            List<String> lore = entry.getLore();
-            if (!lore.isEmpty()) {
+            meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', finalDisplay));
+            if (!finalLore.isEmpty()) {
                 List<String> colored = new ArrayList<>();
-                for (String line : lore) colored.add(ChatColor.translateAlternateColorCodes('&', line));
+                for (String line : finalLore) colored.add(ChatColor.translateAlternateColorCodes('&', line));
                 meta.setLore(colored);
             }
         });
