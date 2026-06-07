@@ -96,9 +96,8 @@ body{background:#0d1117;color:#c9d1d9;font-family:Consolas,'Microsoft YaHei',san
     <input class="search-box" placeholder="搜索ID/名称..." oninput="filterItems(this.value)" id="item-search">
     <div id="item-list" style="flex:1;overflow-y:auto;"></div>
   </div>
-  <div class="center" id="center-panel">
-    <div style="text-align:center;color:#484f58;padding-top:60px;" id="center-empty">请选择左侧物品</div>
-  </div>
+  <div class="center" id="center-panel" style="display:none;"></div>
+  <div style="text-align:center;color:#484f58;padding-top:60px;flex:1;overflow-y:auto;" id="center-empty">请选择左侧物品</div>
   <div class="panel right" id="right-panel" style="display:none;">
     <div style="font-weight:700;font-size:13px;margin-bottom:10px;">配方属性</div>
     <div class="slabel">合成方式</div>
@@ -263,6 +262,7 @@ function selectItem(id) {
   if (pendingSelectTimer) clearTimeout(pendingSelectTimer);
   if (selectedItemId === id) { doSelectItem(id); return; }
   $id('center-empty').style.display = 'none';
+  $id('center-panel').style.display = '';
   $id('center-panel').innerHTML = '<div style="text-align:center;color:#484f58;padding-top:60px;">加载中...</div>';
   pendingSelectTimer = setTimeout(function(){ doSelectItem(id); }, 40);
 }
@@ -521,7 +521,8 @@ function revertFromServer() {
   selectedItemId = null;
   $id('right-panel').style.display = 'none';
   $id('center-empty').style.display = 'block';
-  $id('center-panel').innerHTML = '<div style="text-align:center;color:#484f58;padding-top:60px;">请选择左侧物品</div>';
+  $id('center-panel').style.display = 'none';
+  $id('center-panel').innerHTML = '';
   loadAll();
   showToast('已从服务器重新加载','success');
 }
