@@ -430,14 +430,9 @@ function renderEditor() {
   $('edit-page').value = node.page || 1;
 
   if (isRef) {
-    $('edit-ref-target-wrap').style.display = '';
-    $('edit-ref-target').value = node.ref || '';
-    $('edit-ref-target').disabled = isRefCopy;
     $('edit-ref-mode-wrap').style.display = '';
     $('edit-ref-mode').value = node.mode || 'custom';
-    $('edit-ref-mode').disabled = isRefCopy;
   } else {
-    $('edit-ref-target-wrap').style.display = 'none';
     $('edit-ref-mode-wrap').style.display = 'none';
   }
 
@@ -501,8 +496,7 @@ function updateSelection() {
   if (!isItem && !isRefCopy) node.display = $('edit-display').value;
   if (!isItem && !isRefCopy) node.lore = $('edit-lore').value.split('\n');
   if (!isItem && !isRefCopy) node.glow = $('edit-glow').checked;
-  if (isRef && !isRefCopy) node.ref = $('edit-ref-target').value;
-  if (isRef && !isRefCopy) node.mode = $('edit-ref-mode').value;
+  if (isRef) node.mode = $('edit-ref-mode').value;
   node.page = parseInt($('edit-page').value) || 1;
   state.currentPage = node.page;
   if (isRef && node.mode !== prevMode) renderEditor();
