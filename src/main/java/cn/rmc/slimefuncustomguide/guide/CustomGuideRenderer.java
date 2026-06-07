@@ -126,6 +126,7 @@ public class CustomGuideRenderer {
         menu.addMenuClickHandler(SEARCH_SLOT, (pl, s, is, action) -> {
             pl.closeInventory();
             Slimefun.getLocalization().sendMessage(pl, "guide.search.message");
+            SlimefunCustomGuideAPI.markExternalView(pl);
             ChatInput.waitForPlayer(Slimefun.instance(), pl, msg -> {
                 PlayerProfile.get(pl, profile ->
                         SlimefunGuide.openSearch(profile, msg, mode, true));
