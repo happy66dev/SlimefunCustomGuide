@@ -27,6 +27,7 @@ import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.api.researches.Research;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
+import org.bukkit.Bukkit;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -288,9 +289,27 @@ public class ResearchApiHandler implements HttpHandler {
             plugin.getLogger().log(Level.WARNING, "Invalid research save payload", e);
             return false;
         }
-        for (ResearchUpdate update : updates) applyResearchUpdate(update, config);
-        config.save(); plugin.getLogger().info("Researches.yml saved via web editor");
-        return true;
+        try {
+            runSync(() -> {
+                for (ResearchUpdate update : updates) applyResearchUpdate(update, config);
+                config.save(); plugin.getLogger().info("Researches.yml saved via web editor");
+            });
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to save Researches.yml via web editor", e);
+            return false;
+        }
+    }
+
+    private void runSync(Runnable task) throws Exception {
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+            return;
+        }
+        Bukkit.getScheduler().callSyncMethod(plugin, () -> {
+            task.run();
+            return null;
+        }).get();
     }
 
     static List<ResearchUpdate> parseResearchSavePayload(String json) {

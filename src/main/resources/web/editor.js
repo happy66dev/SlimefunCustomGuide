@@ -85,7 +85,7 @@ window.fetch = function(input, init) {
   init = init || {};
   init.headers = init.headers || {};
   if (API_TOKEN) {
-    init.headers['X-SlimefunCustomGuide-Token'] = API_TOKEN;
+    init.headers['X-slimefunweaver-Token'] = API_TOKEN;
   }
   return nativeFetch(input, init);
 };
@@ -97,7 +97,10 @@ var Toast = {
     var el = document.createElement('div');
     el.className = 'toast ' + type;
     var icons = {success:'\u2714', error:'\u2716', warning:'\u26a0', info:'\u2139'};
-    el.innerHTML = '<span>' + (icons[type]||'') + '</span> ' + msg;
+    var icon = document.createElement('span');
+    icon.textContent = icons[type] || '';
+    el.appendChild(icon);
+    el.appendChild(document.createTextNode(' ' + msg));
     container.appendChild(el);
     setTimeout(function() { el.classList.add('fadeout'); setTimeout(function() { el.remove(); }, 300); }, duration);
   }
@@ -136,7 +139,7 @@ var Dialog = {
 
 var state = {
   categories: [], selectedCategory: null, selectedNode: null,
-  currentPage: 1, pickerTarget: null, dirty: false, pickerFilter: 'all'
+  currentPage: 1, pickerTarget: null, dirty: false, pickerFilter: 'all', saving: false
 };
 
 function $(id) { return document.getElementById(id); }
@@ -158,17 +161,21 @@ function updateSaveStatus() {
 async function loadCategories() {
   try {
     var resp = await fetch('/api/categories');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     var data = await resp.json();
+    if (!Array.isArray(data.categories)) throw new Error('分类数据格式错误');
     state.categories = data.categories;
     clearDirty();
     renderTree();
-  } catch(e) { Toast.show('无法连接到服务器', 'error'); }
+    return true;
+  } catch(e) { Toast.show('加载失败: ' + e.message, 'error'); return false; }
 }
 
 async function discardChanges() {
   Dialog.confirm('放弃所有未保存的修改？此操作会从服务器重新加载配置。', function(ok) {
     if (!ok) return;
-    loadCategories().then(function() {
+    loadCategories().then(function(ok) {
+      if (!ok) return;
       state.selectedCategory = null;
       state.selectedNode = null;
       state.currentPage = 1;
@@ -242,7 +249,7 @@ function buildTreeItem(cat, index, parentRef, depth) {
   var totalChildren = (cat.children ? cat.children.length : 0) + (cat.items ? cat.items.length : 0);
 
   var icon = '\u25b8';
-  li.innerHTML = '<span class="tree-icon">' + icon + '</span><span class="tree-label tree-category" title="' + MC.strip(cat.display||cat.key) + '">' + MC.parseToHtml(cat.display||cat.key) + '</span>' + (totalChildren > 0 ? '<span class="tree-badge">' + totalChildren + '</span>' : '');
+  li.innerHTML = '<span class="tree-icon">' + icon + '</span><span class="tree-label tree-category" title="' + MC.escapeHtml(MC.strip(cat.display||cat.key)) + '">' + MC.parseToHtml(cat.display||cat.key) + '</span>' + (totalChildren > 0 ? '<span class="tree-badge">' + totalChildren + '</span>' : '');
 
   li.onclick = function(e) { e.stopPropagation(); selectCategory(cat, index, parentRef); };
   if (state.selectedNode === cat) li.classList.add('active');
@@ -262,7 +269,7 @@ function buildTreeItem(cat, index, parentRef, depth) {
       var itLabel = it.display || it.id || it.key || '?';
       if (itType === 'PLACEHOLDER') itLabel = it.display || '(占位)';
       if (itType === 'REFERENCE') itLabel = it.display || '\u21b3 ' + (it.ref || '?');
-      itemLi.innerHTML = '<span class="tree-icon" style="opacity:0.7">' + itIcon + '</span><span class="tree-label tree-item" title="' + MC.strip(itLabel) + '">' + MC.parseToHtml(itLabel) + '</span>';
+      itemLi.innerHTML = '<span class="tree-icon" style="opacity:0.7">' + itIcon + '</span><span class="tree-label tree-item" title="' + MC.escapeHtml(MC.strip(itLabel)) + '">' + MC.parseToHtml(itLabel) + '</span>';
       itemLi.onclick = function(e) { e.stopPropagation(); selectGridItem(it, ii); };
       if (state.selectedNode === it) itemLi.classList.add('active');
       ul.appendChild(itemLi);
@@ -469,7 +476,7 @@ function renderEditor() {
   $('edit-lore').disabled = readOnly;
   $('edit-glow').checked = !!effectiveNode.glow;
   $('edit-glow').disabled = readOnly;
-  $('btn-pick-icon').style.display = readOnly && !isRef ? 'none' : '';
+  $('btn-pick-icon').style.display = readOnly ? 'none' : '';
   $('edit-page').value = node.page || 1;
 
   if (isRef) {
@@ -550,8 +557,13 @@ function updateSelection() {
   renderTree();
 }
 
-document.getElementById('edit-display').addEventListener('input', updateDisplayPreview);
-document.getElementById('edit-lore').addEventListener('input', updateLorePreview);
+function syncCurrentSelection() {
+  if (!state.selectedNode) return;
+  updateSelection();
+}
+
+document.getElementById('edit-display').addEventListener('input', function(){ updateDisplayPreview(); syncCurrentSelection(); });
+document.getElementById('edit-lore').addEventListener('input', function(){ updateLorePreview(); syncCurrentSelection(); });
 
 function deleteSelected() {
   if (!state.selectedNode || !state.selectedCategory) return;
@@ -626,7 +638,9 @@ function addCategory() {
       Toast.show('key "' + key + '" 已存在，自动更名为 "' + suggested + '"', 'warning');
       key = suggested;
     }
-    var newCat = { key: key, display: key, icon: { type: 'VANILLA', id: 'BOOK' }, glow: false, lore: [], page: 1, slot: findEmptySlot(), children: [], items: [] };
+    var slot = findEmptySlot();
+    if (slot < 0) { Toast.show('当前页已满 (36/36)', 'error'); return; }
+    var newCat = { key: key, display: key, icon: { type: 'VANILLA', id: 'BOOK' }, glow: false, lore: [], page: state.currentPage, slot: slot, children: [], items: [] };
     if (state.selectedCategory) {
       if (!state.selectedCategory.children) state.selectedCategory.children = [];
       state.selectedCategory.children.push(newCat);
@@ -646,7 +660,9 @@ function addCategory() {
 function addPlaceholder() {
   if (!state.selectedCategory && state.selectedCategory !== null) { Toast.show('请先选择左侧分类', 'warning'); return; }
   if (state.selectedCategory === null) { Toast.show('根级别不能添加占位物品，请选择子分类', 'warning'); return; }
-  var newPh = { type: 'PLACEHOLDER', display: '', icon: { type: 'VANILLA', id: 'GRAY_STAINED_GLASS_PANE' }, glow: false, lore: [], page: 1, slot: findEmptySlot() };
+  var slot = findEmptySlot();
+  if (slot < 0) { Toast.show('当前页已满 (36/36)', 'error'); return; }
+  var newPh = { type: 'PLACEHOLDER', display: '', icon: { type: 'VANILLA', id: 'GRAY_STAINED_GLASS_PANE' }, glow: false, lore: [], page: state.currentPage, slot: slot };
   if (!state.selectedCategory.items) state.selectedCategory.items = [];
   state.selectedCategory.items.push(newPh);
   markDirty();
@@ -746,7 +762,7 @@ function findEmptySlot() {
   var used = {};
   getChildren().forEach(function(item) { if ((item.page || 1) === page) used[item.slot || 0] = true; });
   for (var i = 0; i < 36; i++) { if (!used[i]) return i; }
-  return 0;
+  return -1;
 }
 
 function showContextMenu(x, y, item) {
@@ -829,7 +845,7 @@ function renderReferenceResults() {
     html += '<div class="picker-item" onclick="pickRefCategory(' + i + ')">' +
       '<span class="item-type category">分类</span>' +
       '<span>' + MC.parseToHtml(cat.display || cat.key) + '</span>' +
-      '<span class="item-id">' + (cat.key || '') + '</span>' +
+      '<span class="item-id">' + MC.escapeHtml(cat.key || '') + '</span>' +
       '<div class="ref-path">' + pathHtml + '</div>' +
       '</div>';
   });
@@ -844,7 +860,9 @@ function pickRefCategory(index) {
   var pathParts = r.breadcrumb.map(function(bc) { return bc.key; });
   pathParts.push(key);
   var refPath = pathParts.join('/');
-  var newRef = { type: 'REFERENCE', ref: refPath, mode: 'custom', display: '', icon: { type: 'VANILLA', id: 'ARROW' }, glow: false, lore: [], page: 1, slot: findEmptySlot() };
+  var slot = findEmptySlot();
+  if (slot < 0) { Toast.show('当前页已满 (36/36)', 'error'); return; }
+  var newRef = { type: 'REFERENCE', ref: refPath, mode: 'custom', display: '', icon: { type: 'VANILLA', id: 'ARROW' }, glow: false, lore: [], page: state.currentPage, slot: slot };
   if (!state.selectedCategory.items) state.selectedCategory.items = [];
   state.selectedCategory.items.push(newRef);
   closePicker();
@@ -915,7 +933,9 @@ function pickMaterial(type, id) {
         closePicker();
         return;
       }
-      var newItem = { type: 'ITEM', id: id, display: id, page: state.currentPage, slot: findEmptySlot() };
+      var slot = findEmptySlot();
+      if (slot < 0) { Toast.show('当前页已满 (36/36)', 'error'); closePicker(); return; }
+      var newItem = { type: 'ITEM', id: id, display: id, page: state.currentPage, slot: slot };
       if (!state.selectedCategory.items) state.selectedCategory.items = [];
       state.selectedCategory.items.push(newItem);
       markDirty();
@@ -931,6 +951,9 @@ function prevPage() { if (state.currentPage > 1) { state.currentPage--; renderGr
 function nextPage() { var max = getMaxPage(); if (state.currentPage < max) { state.currentPage++; renderGrid(); } }
 
 async function saveAll() {
+  if (state.saving) return;
+  state.saving = true;
+  syncCurrentSelection();
   var btn = $('btn-save');
   btn.disabled = true;
   btn.innerHTML = '<span class="btn-icon">\u23f3</span> 保存中...';
@@ -940,19 +963,22 @@ async function saveAll() {
 
   try {
     var body = JSON.stringify({ categories: state.categories });
-    var resp = await fetch('/api/categories', { method: 'PUT', body: body });
+    var resp = await fetch('/api/categories', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: body });
     if (resp.ok) {
       clearDirty();
       Toast.show('保存成功！分类已重新加载', 'success');
     } else {
-      Toast.show('保存失败: HTTP ' + resp.status, 'error');
+      var data = null;
+      try { data = await resp.json(); } catch(e) {}
+      Toast.show('保存失败: ' + (data && data.error ? data.error : ('HTTP ' + resp.status)), 'error');
     }
   } catch(e) {
     Toast.show('保存失败: 无法连接服务器', 'error');
+  } finally {
+    state.saving = false;
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-icon">\u{1F4BE}</span> 保存';
   }
-
-  btn.disabled = false;
-  btn.innerHTML = '<span class="btn-icon">\u{1F4BE}</span> 保存';
 }
 
 document.addEventListener('keydown', function(e) {

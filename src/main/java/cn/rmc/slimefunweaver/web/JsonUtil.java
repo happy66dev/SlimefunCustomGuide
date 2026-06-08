@@ -91,6 +91,7 @@ public final class JsonUtil {
             }
         }
         sb.append("]}");
+        visitedKeys.remove(key);
     }
 
     private static void appendItemEntry(StringBuilder sb, CustomItemEntry entry) {

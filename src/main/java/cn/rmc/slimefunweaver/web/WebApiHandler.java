@@ -26,6 +26,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -171,8 +172,18 @@ public class WebApiHandler implements HttpHandler {
                 exchange.sendResponseHeaders(400, -1);
                 return;
             }
-            saveCategoriesFromJson(body);
-            plugin.reloadCategories();
+            SaveResult result = saveCategoriesFromJson(body);
+            if (!result.ok) {
+                serveError(exchange, result.status, result.message);
+                return;
+            }
+            try {
+                runSync(() -> plugin.reloadCategories());
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.WARNING, "Failed to reload categories after web save", e);
+                serveError(exchange, 500, "failed to reload categories");
+                return;
+            }
             byte[] bytes = "{\"ok\":true}".getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
             exchange.sendResponseHeaders(200, bytes.length);
@@ -184,21 +195,30 @@ public class WebApiHandler implements HttpHandler {
         }
     }
 
-    private void saveCategoriesFromJson(String json) {
+    private SaveResult saveCategoriesFromJson(String json) {
         YamlConfiguration yaml = new YamlConfiguration();
         ConfigurationSection root = yaml.createSection("categories");
 
-        JsonElement parsed = new JsonParser().parse(json);
-        if (!parsed.isJsonObject()) return;
+        JsonElement parsed;
+        try {
+            parsed = new JsonParser().parse(json);
+        } catch (Exception e) {
+            return SaveResult.badRequest("invalid json");
+        }
+        if (!parsed.isJsonObject()) return SaveResult.badRequest("json root must be object");
         JsonObject rootObj = parsed.getAsJsonObject();
         JsonArray categoriesArr = (rootObj.has("categories") && rootObj.get("categories").isJsonArray())
                 ? rootObj.getAsJsonArray("categories") : null;
-        if (categoriesArr == null) return;
+        if (categoriesArr == null) return SaveResult.badRequest("categories must be array");
 
-        for (JsonElement elem : categoriesArr) {
-            if (elem.isJsonObject()) {
-                parseCategoryFromJson(elem.getAsJsonObject(), root);
+        try {
+            Set<String> rootKeys = new HashSet<>();
+            for (JsonElement elem : categoriesArr) {
+                if (!elem.isJsonObject()) return SaveResult.badRequest("category must be object");
+                parseCategoryFromJson(elem.getAsJsonObject(), root, rootKeys);
             }
+        } catch (IllegalArgumentException e) {
+            return SaveResult.badRequest(e.getMessage());
         }
 
         File tempFile = new File(plugin.getDataFolder(), "categories.yml.tmp");
@@ -207,7 +227,7 @@ public class WebApiHandler implements HttpHandler {
             writer.flush();
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Failed to save categories.yml from web editor", e);
-            return;
+            return SaveResult.serverError("failed to write categories.yml");
         }
         File finalFile = new File(plugin.getDataFolder(), "categories.yml");
         try {
@@ -220,13 +240,26 @@ public class WebApiHandler implements HttpHandler {
                         StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e2) {
                 plugin.getLogger().log(Level.WARNING, "Failed to replace categories.yml", e2);
+                return SaveResult.serverError("failed to replace categories.yml");
             }
         }
+        return SaveResult.ok();
     }
 
-    private void parseCategoryFromJson(JsonObject obj, ConfigurationSection parent) {
+    private void runSync(Runnable task) throws Exception {
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+            return;
+        }
+        Bukkit.getScheduler().callSyncMethod(plugin, () -> {
+            task.run();
+            return null;
+        }).get();
+    }
+
+    private void parseCategoryFromJson(JsonObject obj, ConfigurationSection parent, Set<String> siblingKeys) {
         String key = (obj.has("key") && !obj.get("key").isJsonNull()) ? obj.get("key").getAsString() : null;
-        if (key == null || key.isEmpty()) return;
+        validateCategoryKey(key, siblingKeys);
 
         ConfigurationSection section = parent.createSection(key);
 
@@ -330,12 +363,45 @@ public class WebApiHandler implements HttpHandler {
 
         if (obj.has("children") && obj.get("children").isJsonArray()) {
             JsonArray childrenArr = obj.getAsJsonArray("children");
+            Set<String> childKeys = new HashSet<>();
             for (JsonElement childElem : childrenArr) {
                 if (childElem.isJsonObject()) {
-                    parseCategoryFromJson(childElem.getAsJsonObject(), section);
+                    parseCategoryFromJson(childElem.getAsJsonObject(), section, childKeys);
                 }
             }
         }
+    }
+
+    private void validateCategoryKey(String key, Set<String> siblingKeys) {
+        if (key == null || key.trim().isEmpty()) throw new IllegalArgumentException("category key is required");
+        if ("_cycle".equals(key)) throw new IllegalArgumentException("_cycle is reserved");
+        if (key.contains("/") || key.matches(".*\\s+.*")) throw new IllegalArgumentException("category key contains invalid characters: " + key);
+        if (!siblingKeys.add(key)) throw new IllegalArgumentException("duplicate category key: " + key);
+    }
+
+    private void serveError(HttpExchange exchange, int status, String message) throws IOException {
+        String json = "{\"ok\":false,\"error\":\"" + JsonUtil.escape(message) + "\"}";
+        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
+        exchange.getResponseHeaders().set("Cache-Control", "no-store");
+        exchange.sendResponseHeaders(status, bytes.length);
+        try (OutputStream os = exchange.getResponseBody()) { os.write(bytes); }
+    }
+
+    private static class SaveResult {
+        final boolean ok;
+        final int status;
+        final String message;
+
+        private SaveResult(boolean ok, int status, String message) {
+            this.ok = ok;
+            this.status = status;
+            this.message = message;
+        }
+
+        static SaveResult ok() { return new SaveResult(true, 200, ""); }
+        static SaveResult badRequest(String message) { return new SaveResult(false, 400, message); }
+        static SaveResult serverError(String message) { return new SaveResult(false, 500, message); }
     }
 
     private void handleMaterials(HttpExchange exchange) throws IOException {

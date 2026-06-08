@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class RecipeApiJsonTest {
 
@@ -29,11 +29,12 @@ public class RecipeApiJsonTest {
     }
 
     @Test
-    public void omitsItemWhenAllSubmittedRecipesAreNullTypes() {
+    public void keepsEmptyItemWhenAllSubmittedRecipesAreNullTypes() {
         String json = "{\"items\":{\"TEST_ITEM\":{\"recipes\":[{\"type\":\"null\"}]}}}";
 
         Map<String, List<Map<String, Object>>> parsed = RecipeApiHandler.parseRecipeSavePayload(json);
 
-        assertFalse(parsed.containsKey("TEST_ITEM"));
+        assertTrue(parsed.containsKey("TEST_ITEM"));
+        assertTrue(parsed.get("TEST_ITEM").isEmpty());
     }
 }

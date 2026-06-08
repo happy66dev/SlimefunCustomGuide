@@ -27,6 +27,7 @@ import com.sun.net.httpserver.HttpHandler;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -460,10 +461,26 @@ public class RecipeApiHandler implements HttpHandler {
         }
 
         storedRecipes = yaml;
-        applyAllRecipes();
+        try {
+            runSync(RecipeApiHandler::applyAllRecipes);
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to apply Recipes.yml", e);
+            return false;
+        }
 
         plugin.getLogger().info("Recipes.yml saved and applied");
         return true;
+    }
+
+    private static void runSync(Runnable task) throws Exception {
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+            return;
+        }
+        Bukkit.getScheduler().callSyncMethod(plugin, () -> {
+            task.run();
+            return null;
+        }).get();
     }
 
     static Map<String, List<Map<String, Object>>> parseRecipeSavePayload(String json) {
@@ -500,7 +517,7 @@ public class RecipeApiHandler implements HttpHandler {
                 if (processingTime > 0) map.put("processing-time", processingTime);
                 recipeList.add(map);
             }
-            if (!recipeList.isEmpty()) parsedRecipes.put(itemEntry.getKey(), recipeList);
+            parsedRecipes.put(itemEntry.getKey(), recipeList);
         }
         return parsedRecipes;
     }
