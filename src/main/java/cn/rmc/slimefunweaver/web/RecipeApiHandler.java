@@ -233,7 +233,7 @@ public class RecipeApiHandler implements HttpHandler {
     }
 
     private String buildRecipeTypesJson() {
-        Map<String, RecipeType> resolved = resolveBuiltinTypes();
+        Map<String, RecipeType> resolved = collectRuntimeRecipeTypes(resolveBuiltinTypes());
         Map<String, RecipeTypeInfo> collected = collectAllRecipeTypes(resolved);
         StringBuilder sb = new StringBuilder("{\"types\":[");
         boolean first = true;
@@ -720,6 +720,16 @@ public class RecipeApiHandler implements HttpHandler {
             } catch (Exception ignored) {}
         }
         return null;
+    }
+
+    private static Map<String, RecipeType> collectRuntimeRecipeTypes(Map<String, RecipeType> base) {
+        Map<String, RecipeType> map = new LinkedHashMap<>(base);
+        for (SlimefunItem item : Slimefun.getRegistry().getEnabledSlimefunItems()) {
+            RecipeType rt = item.getRecipeType();
+            if (rt == null || rt.getKey() == null) continue;
+            map.putIfAbsent(rt.getKey().toString(), rt);
+        }
+        return map;
     }
 
     private static boolean isNullRecipeType(String key) {
