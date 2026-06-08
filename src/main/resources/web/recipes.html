@@ -197,7 +197,7 @@ var MC = {
   escapeHtml: function(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 };
 
-var itemData = {}, recipeTypes = [], itemNames = {}, allItems = [], selectedItemId = null;
+var itemData = {}, recipeTypes = [], itemNames = {}, allItems = [], selectedItemId = null, dirty = false, saving = false;
 var currentTypeKey = '', slots = [], outputItemId = '', outputItemName = '', amount = 1, processingTime = 0;
 var pickerTarget = 'slot', pickerSlotIdx = -1;
 var popupCache = [];
@@ -245,7 +245,18 @@ function filterItems(v) { renderItemList(v); }
 
 var pendingSelectTimer = null;
 
+function setDirty(v) {
+  dirty = !!v;
+  var bag = $id('save-badge');
+  if (!bag) return;
+  if (saving) return;
+  if (dirty) { bag.textContent = '未保存'; bag.style.background='#2a1a1a'; bag.style.color='#f85149'; }
+  else { bag.textContent = '已保存'; bag.style.background='#1a2f1a'; bag.style.color='#3fb950'; }
+}
+
 function selectItem(id) {
+  if (dirty && selectedItemId !== id && !confirm('当前合成表有未保存修改，确定切换物品并丢弃这些修改？')) return;
+  setDirty(false);
   if (pendingSelectTimer) clearTimeout(pendingSelectTimer);
   if (selectedItemId === id) { doSelectItem(id); return; }
   $id('center-empty').style.display = 'none';
@@ -392,6 +403,7 @@ function changeType(key) {
   renderTypeList();
   renderGrid();
   updateYaml();
+  setDirty(true);
 }
 
 function visibleSlots() {
@@ -409,6 +421,7 @@ function changeTime(val) {
   dlog('CHANGE', 'changeTime: ' + processingTime + ' tick');
   renderGrid();
   updateYaml();
+  setDirty(true);
 }
 
 function openSlotPicker(idx) {
@@ -474,6 +487,7 @@ function pickMaterial(id, name) {
   closePicker();
   renderGrid();
   updateYaml();
+  setDirty(true);
 }
 
 function closePicker() {
@@ -485,6 +499,7 @@ function changeAmount(d) {
   $id('amount-display').textContent = amount;
   renderGrid();
   updateYaml();
+  setDirty(true);
 }
 
 function updateYaml() {
@@ -545,16 +560,19 @@ function revertFromServer() {
 
 function save() {
   if (!selectedItemId) { showToast('请先选择物品','error'); return; }
+  if (saving) return;
   if (isNullRecipeType(currentTypeKey)) { showToast('请先选择有效合成方式','error'); return; }
+  saving = true;
   var bag = $id('save-badge');
   bag.textContent = '保存中...'; bag.style.background='#2a1a1a'; bag.style.color='#f85149';
 
+  var savingItemId = selectedItemId;
   var inputIds = slots.slice(0, visibleSlots()).map(function(s){return s && s.id !== 'AIR' ? s.id : 'AIR';});
   var recipe = {type:currentTypeKey, input:inputIds, output:outputItemId, outputAmount:amount, processingTime:processingTime};
   var payload = {items:{}};
-  payload.items[selectedItemId] = {recipes:[recipe]};
+  payload.items[savingItemId] = {recipes:[recipe]};
 
-  dlog('SAVE', 'saving ' + selectedItemId + ': type=' + currentTypeKey + ' input=' + inputIds.join(',') + ' output=' + outputItemId + ' amt=' + amount + ' time=' + processingTime);
+  dlog('SAVE', 'saving ' + savingItemId + ': type=' + currentTypeKey + ' input=' + inputIds.join(',') + ' output=' + outputItemId + ' amt=' + amount + ' time=' + processingTime);
   var body = JSON.stringify(payload);
   dlog('SAVE', 'PUT /api/recipes body=' + body.substring(0, 200));
 
@@ -562,27 +580,32 @@ function save() {
     if (!r.ok) throw new Error('HTTP '+r.status);
     return r.json();
   }).then(function(){
-    itemData[selectedItemId] = {
-      id: selectedItemId, name: originalItemName,
+    itemData[savingItemId] = {
+      id: savingItemId, name: originalItemName,
       currentRecipeType: currentTypeKey,
       currentRecipe: inputIds.slice(),
       recipes: [recipe]
     };
     for (var i = 0; i < allItems.length; i++) {
-      if (allItems[i].id === selectedItemId) {
+      if (allItems[i].id === savingItemId) {
         allItems[i].rt = currentTypeKey;
         break;
       }
     }
+    saving = false;
+    if (selectedItemId === savingItemId) setDirty(false);
     bag.textContent = '已保存 · 实时生效'; bag.style.background='#1a2f1a'; bag.style.color='#3fb950';
     dlog('SAVE', 'save success, itemData + allItems updated');
     showToast('合成表已更新 · 实时生效','success');
   }).catch(function(e){
+    saving = false;
     bag.textContent = '保存失败'; bag.style.background='#2a1a1a'; bag.style.color='#f85149';
     dlogErr('SAVE', 'save failed: ' + e.message);
     showToast('保存失败: '+e.message,'error');
   });
 }
+
+window.addEventListener('beforeunload', function(e){ if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 
 function showToast(msg, type) {
   var t = $id('toast'); t.textContent = msg; t.className = 'toast toast-'+(type||'info');

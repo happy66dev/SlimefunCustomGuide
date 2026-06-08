@@ -172,6 +172,8 @@ public class WebApiHandler implements HttpHandler {
                 exchange.sendResponseHeaders(400, -1);
                 return;
             }
+            File categoriesFile = new File(plugin.getDataFolder(), "categories.yml");
+            String previousContent = readFileContent(categoriesFile);
             SaveResult result = saveCategoriesFromJson(body);
             if (!result.ok) {
                 serveError(exchange, result.status, result.message);
@@ -180,6 +182,8 @@ public class WebApiHandler implements HttpHandler {
             try {
                 runSync(() -> plugin.reloadCategories());
             } catch (Exception e) {
+                restoreFileContent(categoriesFile, previousContent);
+                try { runSync(() -> plugin.reloadCategories()); } catch (Exception ignored) {}
                 plugin.getLogger().log(Level.WARNING, "Failed to reload categories after web save", e);
                 serveError(exchange, 500, "failed to reload categories");
                 return;
@@ -244,6 +248,26 @@ public class WebApiHandler implements HttpHandler {
             }
         }
         return SaveResult.ok();
+    }
+
+    private String readFileContent(File file) {
+        try {
+            if (file == null || !file.exists()) return null;
+            return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to backup categories.yml before web save", e);
+            return null;
+        }
+    }
+
+    private void restoreFileContent(File file, String content) {
+        try {
+            if (file == null) return;
+            if (content == null) Files.deleteIfExists(file.toPath());
+            else Files.write(file.toPath(), content.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to restore categories.yml after reload failure", e);
+        }
     }
 
     private void runSync(Runnable task) throws Exception {
