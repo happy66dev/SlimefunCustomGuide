@@ -40,7 +40,7 @@ import java.util.logging.Level;
 public class RecipeApiHandler implements HttpHandler {
 
     private static SlimefunWeaver plugin;
-    private static YamlConfiguration storedRecipes;
+    private static volatile YamlConfiguration storedRecipes;
     private final String recipesHtml;
 
     private static final Set<String> BUILTIN_RECIPE_TYPES = new LinkedHashSet<>();
@@ -372,8 +372,6 @@ public class RecipeApiHandler implements HttpHandler {
         return sb.toString();
     }
 
-    private static Map<String, RecipeType> recipeTypeCache = Collections.emptyMap();
-
     private static Map<String, RecipeType> resolveBuiltinTypes() {
         Map<String, RecipeType> map = new LinkedHashMap<>();
         for (Field f : RecipeType.class.getDeclaredFields()) {
@@ -385,7 +383,6 @@ public class RecipeApiHandler implements HttpHandler {
                 if (BUILTIN_RECIPE_TYPES.contains(k)) map.put(k, rt);
             } catch (Exception ignored) {}
         }
-        recipeTypeCache = map;
         return map;
     }
 
@@ -573,7 +570,10 @@ public class RecipeApiHandler implements HttpHandler {
                 try {
                     Method setProcessingTime = item.getClass().getMethod("setProcessingTime", int.class);
                     setProcessingTime.invoke(item, processingTime);
-                } catch (Exception ignored) {}
+                } catch (NoSuchMethodException ignored) {
+                } catch (Exception e) {
+                    plugin.getLogger().log(Level.WARNING, "Failed to set processing time for " + itemId, e);
+                }
             }
         }
 
@@ -687,7 +687,18 @@ public class RecipeApiHandler implements HttpHandler {
         int start = idx + s.length(); StringBuilder sb = new StringBuilder();
         for (int i = start; i < json.length(); i++) {
             char ch = json.charAt(i);
-            if (ch == '\\' && i + 1 < json.length()) { i++; continue; }
+            if (ch == '\\' && i + 1 < json.length()) {
+                i++;
+                char nx = json.charAt(i);
+                if (nx == '"') sb.append('"');
+                else if (nx == '\\') sb.append('\\');
+                else if (nx == '/') sb.append('/');
+                else if (nx == 'n') sb.append('\n');
+                else if (nx == 'r') sb.append('\r');
+                else if (nx == 't') sb.append('\t');
+                else { sb.append('\\'); sb.append(nx); }
+                continue;
+            }
             if (ch == '"') break;
             sb.append(ch);
         }

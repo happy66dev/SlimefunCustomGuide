@@ -199,10 +199,7 @@ var itemData = {}, recipeTypes = [], allItems = [], selectedItemId = null;
 var currentTypeKey = '', slots = [], outputItemId = '', outputItemName = '', amount = 1, processingTime = 0;
 var pickerTarget = 'slot', pickerSlotIdx = -1;
 var popupCache = [];
-var lastSavedSlot = '';
-var lastSavedOutput = '';
-var lastSavedAmount = 1;
-var lastSavedTime = 0;
+var originalItemName = '';
 
 function $id(id) { return document.getElementById(id); }
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -240,22 +237,6 @@ function renderItemList(filter) {
 
 function filterItems(v) { renderItemList(v); }
 
-function snapshotItem(d) {
-  var recipes = d.recipes || [];
-  if (recipes.length > 0) {
-    var r = recipes[0];
-    lastSavedSlot = (r.input||[]).join(',');
-    lastSavedOutput = r.output || d.id;
-    lastSavedAmount = r.outputAmount || 1;
-    lastSavedTime = r.processingTime || 0;
-  } else {
-    lastSavedSlot = (d.currentRecipe||[]).join(',');
-    lastSavedOutput = d.id;
-    lastSavedAmount = 1;
-    lastSavedTime = 0;
-  }
-}
-
 var pendingSelectTimer = null;
 
 function selectItem(id) {
@@ -271,10 +252,16 @@ function doSelectItem(id) {
   dlog('SELECT', 'selectItem: ' + id + ' (prev=' + selectedItemId + ')');
   selectedItemId = id;
   var d = itemData[id];
-  if (!d) { dlogErr('SELECT', 'item not found in itemData: ' + id); return; }
+  if (!d) {
+    dlogErr('SELECT', 'item not found in itemData: ' + id);
+    $id('center-empty').style.display = 'block';
+    $id('center-panel').style.display = 'none';
+    $id('right-panel').style.display = 'none';
+    return;
+  }
+  originalItemName = d.name || '';
   dlog('SELECT', 'item name=' + MC.strip(d.name) + ' rt=' + (d.currentRecipeType||'null') + ' recipes.length=' + (d.recipes ? d.recipes.length : 0));
   renderItemList($id('item-search').value);
-  snapshotItem(d);
 
   var recipes = d.recipes || [];
   if (recipes.length > 0) {
@@ -490,7 +477,6 @@ function revertItem() {
   dlog('REVERT', 'reverting item ' + selectedItemId + ' from server');
   var d = itemData[selectedItemId];
   if (d) {
-    snapshotItem(d);
     var recipes = d.recipes || [];
     if (recipes.length > 0) {
       var r = recipes[0];
@@ -541,12 +527,12 @@ function save() {
   var body = JSON.stringify(payload);
   dlog('SAVE', 'PUT /api/recipes body=' + body.substring(0, 200));
 
-  fetch('/api/recipes', {method:'PUT', body:body}).then(function(r){
+  fetch('/api/recipes', {method:'PUT', headers:{'Content-Type':'application/json'}, body:body}).then(function(r){
     if (!r.ok) throw new Error('HTTP '+r.status);
     return r.json();
   }).then(function(){
     itemData[selectedItemId] = {
-      id: selectedItemId, name: outputItemName,
+      id: selectedItemId, name: originalItemName,
       currentRecipeType: currentTypeKey,
       currentRecipe: inputIds.slice(),
       recipes: [recipe]
@@ -554,7 +540,6 @@ function save() {
     for (var i = 0; i < allItems.length; i++) {
       if (allItems[i].id === selectedItemId) {
         allItems[i].rt = currentTypeKey;
-        allItems[i].name = outputItemName;
         break;
       }
     }
