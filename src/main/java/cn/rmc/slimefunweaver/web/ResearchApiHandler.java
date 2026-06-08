@@ -141,60 +141,72 @@ public class ResearchApiHandler implements HttpHandler {
     private String buildResearchesJson() {
         Map<String, String> itemToResearch = new LinkedHashMap<>();
         for (Research r : Slimefun.getRegistry().getResearches()) {
-            List<SlimefunItem> affectedItems = r.getAffectedItems();
+            String fullKey = safeResearchKey(r);
+            if (fullKey == null) continue;
+            List<SlimefunItem> affectedItems = safeAffectedItems(r);
             if (affectedItems == null) continue;
-            for (SlimefunItem item : affectedItems) itemToResearch.put(item.getId(), r.getKey().toString());
+            for (SlimefunItem item : affectedItems) {
+                String itemId = safeItemId(item);
+                if (itemId != null) itemToResearch.put(itemId, fullKey);
+            }
         }
         StringBuilder sb = new StringBuilder("{\"researches\":["); boolean firstR = true;
         for (Research r : Slimefun.getRegistry().getResearches()) {
+            String fullKey = safeResearchKey(r);
+            if (fullKey == null) continue;
             if (!firstR) sb.append(','); firstR = false;
-            String fullKey = r.getKey().toString();
             String[] parts = fullKey.split(":", 2);
             String ns = parts.length > 1 ? parts[0] : "slimefun";
             String k = parts.length > 1 ? parts[1] : parts[0];
             sb.append('{'); appendString(sb, "namespace", ns); sb.append(',');
             appendString(sb, "key", k); sb.append(',');
             appendString(sb, "fullKey", fullKey); sb.append(',');
-            appendString(sb, "name", r.getName(null)); sb.append(',');
-            sb.append("\"levelCost\":").append(r.getLevelCost()).append(',');
-            sb.append("\"moneyCost\":").append(r.getMoneyCost()).append(',');
-            sb.append("\"enabled\":").append(r.isEnabled()).append(',');
+            appendString(sb, "name", safeResearchName(r, k)); sb.append(',');
+            sb.append("\"levelCost\":").append(safeInt(() -> r.getLevelCost(), 0)).append(',');
+            sb.append("\"moneyCost\":").append(safeDouble(() -> r.getMoneyCost(), 0)).append(',');
+            sb.append("\"enabled\":").append(safeBoolean(() -> r.isEnabled(), false)).append(',');
 
-            List<SlimefunItem> items = r.getAffectedItems();
+            List<SlimefunItem> items = safeAffectedItems(r);
             if (items == null) items = Collections.emptyList();
             sb.append("\"items\":["); boolean firstI = true;
             for (SlimefunItem it : items) {
+                String itemId = safeItemId(it);
+                if (itemId == null) continue;
                 if (!firstI) sb.append(','); firstI = false;
-                sb.append('{'); appendString(sb, "id", it.getId()); sb.append(',');
-                appendString(sb, "name", it.getItemName()); sb.append('}');
+                sb.append('{'); appendString(sb, "id", itemId); sb.append(',');
+                appendString(sb, "name", safeItemName(it, itemId)); sb.append('}');
             }
             sb.append("],");
 
-            List<SlimefunItem> needItems = r.getNeedUnlockedItems();
+            List<SlimefunItem> needItems = safeNeedItems(r);
             if (needItems == null) needItems = Collections.emptyList();
             sb.append("\"needUnlockedItems\":["); boolean firstN = true;
             for (SlimefunItem it : needItems) {
+                String itemId = safeItemId(it);
+                if (itemId == null) continue;
                 if (!firstN) sb.append(','); firstN = false;
-                sb.append('"').append(escapeJson(it.getId())).append('"');
+                sb.append('"').append(escapeJson(itemId)).append('"');
             }
             sb.append("],\"parents\":["); boolean firstP = true;
             for (SlimefunItem it : needItems) {
-                String pk = itemToResearch.get(it.getId());
+                String itemId = safeItemId(it);
+                if (itemId == null) continue;
+                String pk = itemToResearch.get(itemId);
                 if (pk != null) { if (!firstP) sb.append(','); firstP = false; sb.append('"').append(escapeJson(pk)).append('"'); }
             }
             sb.append("],");
 
-            sb.append("\"miningLevelNeed\":").append(r.getMiningLevelNeed()).append(',');
-            sb.append("\"farmingLevelNeed\":").append(r.getFarmingLevelNeed()).append(',');
-            sb.append("\"foragingLevelNeed\":").append(r.getForagingLevelNeed()).append(',');
-            sb.append("\"fishingLevelNeed\":").append(r.getFishingLevelNeed()).append(',');
-            sb.append("\"excavationLevelNeed\":").append(r.getExcavationLevelNeed()).append(',');
-            sb.append("\"archeryLevelNeed\":").append(r.getArcheryLevelNeed()).append(',');
-            sb.append("\"defenseLevelNeed\":").append(r.getDefenseLevelNeed()).append(',');
-            sb.append("\"fightingLevelNeed\":").append(r.getFightingLevelNeed()).append(',');
-            sb.append("\"agilityLevelNeed\":").append(r.getAgilityLevelNeed()).append(',');
-            sb.append("\"enchantingLevelNeed\":").append(r.getEnchantingLevelNeed()).append(',');
-            sb.append("\"alchemyLevelNeed\":").append(r.getAlchemyLevelNeed());
+            sb.append("\"miningLevelNeed\":").append(safeInt(() -> r.getMiningLevelNeed(), 0)).append(',');
+            sb.append("\"farmingLevelNeed\":").append(safeInt(() -> r.getFarmingLevelNeed(), 0)).append(',');
+            sb.append("\"foragingLevelNeed\":").append(safeInt(() -> r.getForagingLevelNeed(), 0)).append(',');
+            sb.append("\"fishingLevelNeed\":").append(safeInt(() -> r.getFishingLevelNeed(), 0)).append(',');
+            sb.append("\"excavationLevelNeed\":").append(safeInt(() -> r.getExcavationLevelNeed(), 0)).append(',');
+            sb.append("\"archeryLevelNeed\":").append(safeInt(() -> r.getArcheryLevelNeed(), 0)).append(',');
+            sb.append("\"defenseLevelNeed\":").append(safeInt(() -> r.getDefenseLevelNeed(), 0)).append(',');
+            sb.append("\"fightingLevelNeed\":").append(safeInt(() -> r.getFightingLevelNeed(), 0)).append(',');
+            sb.append("\"agilityLevelNeed\":").append(safeInt(() -> r.getAgilityLevelNeed(), 0)).append(',');
+            sb.append("\"enchantingLevelNeed\":").append(safeInt(() -> r.getEnchantingLevelNeed(), 0)).append(',');
+            sb.append("\"alchemyLevelNeed\":").append(safeInt(() -> r.getAlchemyLevelNeed(), 0));
             sb.append('}');
         }
         sb.append("],\"itemToResearch\":{"); boolean firstM = true;
@@ -203,6 +215,63 @@ public class ResearchApiHandler implements HttpHandler {
             sb.append('"').append(escapeJson(e.getKey())).append("\":\"").append(escapeJson(e.getValue())).append('"');
         }
         sb.append("}}"); return sb.toString();
+    }
+
+    private String safeResearchKey(Research r) {
+        try {
+            if (r == null || r.getKey() == null) return null;
+            return r.getKey().toString();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private int safeInt(IntGetter getter, int fallback) {
+        try { return getter.get(); } catch (Exception e) { return fallback; }
+    }
+
+    private boolean safeBoolean(BooleanGetter getter, boolean fallback) {
+        try { return getter.get(); } catch (Exception e) { return fallback; }
+    }
+
+    private double safeDouble(DoubleGetter getter, double fallback) {
+        try { return getter.get(); } catch (Exception e) { return fallback; }
+    }
+
+    private interface IntGetter { int get(); }
+
+    private interface BooleanGetter { boolean get(); }
+
+    private interface DoubleGetter { double get(); }
+
+    private String safeResearchName(Research r, String fallback) {
+        try {
+            String name = r.getName(null);
+            return name != null && !name.isEmpty() ? name : fallback;
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    private List<SlimefunItem> safeAffectedItems(Research r) {
+        try { return r.getAffectedItems(); } catch (Exception e) { return Collections.emptyList(); }
+    }
+
+    private List<SlimefunItem> safeNeedItems(Research r) {
+        try { return r.getNeedUnlockedItems(); } catch (Exception e) { return Collections.emptyList(); }
+    }
+
+    private String safeItemId(SlimefunItem item) {
+        try { return item != null ? item.getId() : null; } catch (Exception e) { return null; }
+    }
+
+    private String safeItemName(SlimefunItem item, String fallback) {
+        try {
+            String name = item.getItemName();
+            return name != null && !name.isEmpty() ? name : fallback;
+        } catch (Exception e) {
+            return fallback;
+        }
     }
 
     private void saveResearchesFromJson(String json) {
