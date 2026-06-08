@@ -283,6 +283,7 @@ function saveResearches() {
   return fetch("/api/researches", {method: "PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload)}).then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }).then(function() { researches.forEach(function(r){var saved=payload.researches.find(function(p){return p.fullKey === (r.fullKey || r.key)});r.needUnlockedItems = saved ? saved.needUnlockedItems : (r.needUnlockedItems || [])}); unsaved = {newResearches: new Set(), newDeps: new Set()}; savingResearches=false; clearDirty(); buildResearchList(document.getElementById("research-search").value); renderGraph(); showToast("保存成功", "success"); }).catch(function(e) { savingResearches=false;if(btn){btn.disabled=false;btn.textContent='💾 保存 *'} showToast("保存失败: " + e.message, "error"); });
 }
 function discardChanges(){
+  if(savingResearches){showToast('正在保存，请稍后再放弃修改','info');return}
   if(!confirm('确定放弃所有未保存的修改？'))return;
   loadResearches().then(function(){
     unsaved={newResearches:new Set(),newDeps:new Set()};

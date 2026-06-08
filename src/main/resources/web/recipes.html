@@ -544,12 +544,15 @@ function revertItem() {
     renderTypeList();
     renderGrid();
     updateYaml();
+    setDirty(false);
     showToast('已放弃修改','success');
   }
 }
 
 function revertFromServer() {
+  if (saving) { showToast('正在保存，请稍后再重新加载','info'); return; }
   dlog('REVERT', 'revertFromServer: full reload from server');
+  setDirty(false);
   selectedItemId = null;
   $id('right-panel').style.display = 'none';
   $id('center-empty').style.display = 'block';

@@ -46,6 +46,7 @@ public class RecipeApiHandler implements HttpHandler {
 
     private static SlimefunWeaver plugin;
     private static volatile YamlConfiguration storedRecipes;
+    private static final Map<String, RecipeSnapshot> originalRecipes = new LinkedHashMap<>();
     private final String recipesHtml;
 
     private static final Set<String> BUILTIN_RECIPE_TYPES = new LinkedHashSet<>();
@@ -114,6 +115,7 @@ public class RecipeApiHandler implements HttpHandler {
 
     public static void loadRecipesOnStartup(SlimefunWeaver plugin) {
         RecipeApiHandler.plugin = plugin;
+        captureOriginalRecipes();
         File file = new File(plugin.getDataFolder(), "Recipes.yml");
         if (!file.exists()) return;
         try {
@@ -461,6 +463,7 @@ public class RecipeApiHandler implements HttpHandler {
     }
 
     private boolean saveRecipesFromJson(String json) {
+        captureOriginalRecipes();
         YamlConfiguration yaml;
         File finalFile = new File(plugin.getDataFolder(), "Recipes.yml");
         if (finalFile.exists()) {
@@ -650,6 +653,7 @@ public class RecipeApiHandler implements HttpHandler {
     }
 
     private static void applyAllRecipes() {
+        restoreOriginalRecipes();
         if (storedRecipes == null) return;
 
         ConfigurationSection root = storedRecipes.getConfigurationSection("slimefun");
@@ -703,6 +707,40 @@ public class RecipeApiHandler implements HttpHandler {
         }
 
         plugin.getLogger().info("Recipes applied in real-time");
+    }
+
+    private static void captureOriginalRecipes() {
+        if (!originalRecipes.isEmpty()) return;
+        for (SlimefunItem item : Slimefun.getRegistry().getEnabledSlimefunItems()) {
+            originalRecipes.put(item.getId(), new RecipeSnapshot(item));
+        }
+    }
+
+    private static void restoreOriginalRecipes() {
+        for (Map.Entry<String, RecipeSnapshot> entry : originalRecipes.entrySet()) {
+            SlimefunItem item = IconParser.findSlimefunItem(entry.getKey());
+            if (item != null) entry.getValue().restore(item);
+        }
+    }
+
+    private static class RecipeSnapshot {
+        private final RecipeType type;
+        private final ItemStack[] recipe;
+        private final ItemStack output;
+
+        RecipeSnapshot(SlimefunItem item) {
+            this.type = item.getRecipeType();
+            ItemStack[] sourceRecipe = item.getRecipe();
+            this.recipe = sourceRecipe == null ? null : Arrays.stream(sourceRecipe).map(stack -> stack == null ? null : stack.clone()).toArray(ItemStack[]::new);
+            ItemStack sourceOutput = item.getRecipeOutput();
+            this.output = sourceOutput == null ? null : sourceOutput.clone();
+        }
+
+        void restore(SlimefunItem item) {
+            item.setRecipeType(type);
+            item.setRecipe(recipe == null ? null : Arrays.stream(recipe).map(stack -> stack == null ? null : stack.clone()).toArray(ItemStack[]::new));
+            item.setRecipeOutput(output == null ? null : output.clone());
+        }
     }
 
     private static ItemStack resolveItemStack(String id) {
