@@ -302,6 +302,7 @@ public class ResearchApiHandler implements HttpHandler {
             plugin.getLogger().log(Level.WARNING, "Invalid research save payload", e);
             return false;
         }
+        String previousContent = readResearchConfigContent(config);
         try {
             runSync(() -> {
                 for (ResearchUpdate update : updates) applyResearchUpdate(update, config);
@@ -312,8 +313,33 @@ public class ResearchApiHandler implements HttpHandler {
             });
             return true;
         } catch (Exception e) {
+            restoreResearchConfig(config, previousContent);
             plugin.getLogger().log(Level.WARNING, "Failed to save Researches.yml via web editor", e);
             return false;
+        }
+    }
+
+    private String readResearchConfigContent(Config config) {
+        try {
+            File file = config.getFile();
+            if (file == null || !file.exists()) return null;
+            return new String(java.nio.file.Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to backup Researches.yml before web save", e);
+            return null;
+        }
+    }
+
+    private void restoreResearchConfig(Config config, String previousContent) {
+        try {
+            File file = config.getFile();
+            if (file == null) return;
+            if (previousContent == null) java.nio.file.Files.deleteIfExists(file.toPath());
+            else java.nio.file.Files.write(file.toPath(), previousContent.getBytes(StandardCharsets.UTF_8));
+            config.reload();
+            Slimefun.getConfigManager().load(true);
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to restore Researches.yml after web save failure", e);
         }
     }
 
