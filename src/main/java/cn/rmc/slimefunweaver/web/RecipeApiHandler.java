@@ -98,7 +98,7 @@ public class RecipeApiHandler implements HttpHandler {
 
     public RecipeApiHandler(SlimefunWeaver plugin) {
         RecipeApiHandler.plugin = plugin;
-        this.recipesHtml = loadFileFromJar("web/recipes.html");
+        this.recipesHtml = WebApiHandler.loadFileFromJar(plugin, "web/recipes.html");
     }
 
     private void redirectToLogin(HttpExchange exchange) throws IOException {
@@ -188,15 +188,6 @@ public class RecipeApiHandler implements HttpHandler {
         serveJson(exchange, sb.toString());
     }
 
-    private String loadFileFromJar(String path) {
-        try (InputStream in = plugin.getResource(path)) {
-            if (in == null) return "<h1>File not found: " + path + "</h1>";
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byte[] buf = new byte[8192]; int n;
-            while ((n = in.read(buf)) != -1) baos.write(buf, 0, n);
-            return new String(baos.toByteArray(), StandardCharsets.UTF_8);
-        } catch (IOException e) { return "<h1>Error: " + e.getMessage() + "</h1>"; }
-    }
 
     private void serveHtml(HttpExchange exchange, String html) throws IOException {
         byte[] bytes = html.getBytes(StandardCharsets.UTF_8);

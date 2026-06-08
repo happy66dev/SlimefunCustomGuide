@@ -41,18 +41,20 @@ import java.util.logging.Level;
 public class WebApiHandler implements HttpHandler {
 
     private final SlimefunWeaver plugin;
+    private final boolean categoriesEnabled;
     private final String indexHtml;
 
-    public WebApiHandler(SlimefunWeaver plugin) {
+    public WebApiHandler(SlimefunWeaver plugin, boolean categoriesEnabled) {
         this.plugin = plugin;
-        this.indexHtml = loadFileFromJar("web/index.html");
+        this.categoriesEnabled = categoriesEnabled;
+        this.indexHtml = categoriesEnabled ? loadFileFromJar(plugin, "web/index.html") : null;
     }
 
     public SlimefunWeaver getPlugin() {
         return plugin;
     }
 
-    private String loadFileFromJar(String path) {
+    public static String loadFileFromJar(SlimefunWeaver plugin, String path) {
         try (InputStream in = plugin.getResource(path)) {
             if (in == null) return "<h1>" + path + " not found in jar</h1>";
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -74,14 +76,17 @@ public class WebApiHandler implements HttpHandler {
             if (path.equals("/api/login")) {
                 handleLogin(exchange, method);
             } else if (path.equals("/") || path.equals("/index.html")) {
+                if (!categoriesEnabled) { exchange.sendResponseHeaders(404, -1); return; }
                 if (!WebSecurity.isAccessAllowed(plugin, exchange)) { serveContent(exchange, loginHtml(), "text/html"); return; }
                 serveContent(exchange, indexHtml, "text/html");
             } else if (path.equals("/style.css")) {
+                if (!categoriesEnabled) { exchange.sendResponseHeaders(404, -1); return; }
                 if (!WebSecurity.isAccessAllowed(plugin, exchange)) { exchange.sendResponseHeaders(403, -1); return; }
-                serveContent(exchange, loadFileFromJar("web/style.css"), "text/css");
+                serveContent(exchange, loadFileFromJar(plugin, "web/style.css"), "text/css");
             } else if (path.equals("/editor.js")) {
+                if (!categoriesEnabled) { exchange.sendResponseHeaders(404, -1); return; }
                 if (!WebSecurity.isAccessAllowed(plugin, exchange)) { exchange.sendResponseHeaders(403, -1); return; }
-                serveContent(exchange, loadFileFromJar("web/editor.js"), "application/javascript");
+                serveContent(exchange, loadFileFromJar(plugin, "web/editor.js"), "application/javascript");
             } else if (path.equals("/api/categories")) {
                 handleCategories(exchange, method);
             } else if (path.equals("/api/materials")) {

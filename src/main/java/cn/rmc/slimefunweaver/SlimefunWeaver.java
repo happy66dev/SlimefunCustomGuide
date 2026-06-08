@@ -64,15 +64,14 @@ public final class SlimefunWeaver extends JavaPlugin implements SlimefunAddon {
 
         SlimefunGuideSettings.addOption(new CustomGuideModeOption());
 
-        if (getConfig().getBoolean("web-editor.auto-load-recipes", true)) {
-            getServer().getScheduler().runTask(this, () -> RecipeApiHandler.loadRecipesOnStartup(this));
-        }
-
         CustomGuideCommand cmd = new CustomGuideCommand(this);
         getCommand("slimefunweaver").setExecutor(cmd);
         getCommand("slimefunweaver").setTabCompleter(cmd);
 
         if (getConfig().getBoolean("web-editor.enabled", false)) {
+            if (getConfig().getBoolean("web-editor.auto-load-recipes", true)) {
+                getServer().getScheduler().runTask(this, () -> RecipeApiHandler.loadRecipesOnStartup(this));
+            }
             String bind = getConfig().getString("web-editor.bind", "127.0.0.1");
             int port = getConfig().getInt("web-editor.port", 8899);
             String token = getConfig().getString("web-editor.token", "");
@@ -85,10 +84,10 @@ public final class SlimefunWeaver extends JavaPlugin implements SlimefunAddon {
                 return;
             }
             webServer = new WebServer();
-            WebApiHandler handler = new WebApiHandler(this);
             boolean catEnabled = getConfig().getBoolean("web-editor.editors.categories", false);
             boolean recEnabled = getConfig().getBoolean("web-editor.editors.recipes", false);
             boolean resEnabled = getConfig().getBoolean("web-editor.editors.researches", false);
+            WebApiHandler handler = new WebApiHandler(this, catEnabled);
             try {
                 webServer.start(bind, port, handler, catEnabled, recEnabled, resEnabled);
                 String base = "http://" + bind + ":" + port;
