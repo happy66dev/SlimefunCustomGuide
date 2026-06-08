@@ -64,14 +64,15 @@ public final class SlimefunWeaver extends JavaPlugin implements SlimefunAddon {
 
         SlimefunGuideSettings.addOption(new CustomGuideModeOption());
 
+        if (getConfig().getBoolean("web-editor.auto-load-recipes", true)) {
+            getServer().getScheduler().runTask(this, () -> RecipeApiHandler.loadRecipesOnStartup(this));
+        }
+
         CustomGuideCommand cmd = new CustomGuideCommand(this);
         getCommand("slimefunweaver").setExecutor(cmd);
         getCommand("slimefunweaver").setTabCompleter(cmd);
 
         if (getConfig().getBoolean("web-editor.enabled", false)) {
-            if (getConfig().getBoolean("web-editor.auto-load-recipes", true)) {
-                getServer().getScheduler().runTask(this, () -> RecipeApiHandler.loadRecipesOnStartup(this));
-            }
             String bind = getConfig().getString("web-editor.bind", "127.0.0.1");
             int port = getConfig().getInt("web-editor.port", 8899);
             String token = getConfig().getString("web-editor.token", "");
