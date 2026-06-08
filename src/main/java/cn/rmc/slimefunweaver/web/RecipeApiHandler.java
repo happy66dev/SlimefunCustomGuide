@@ -279,7 +279,7 @@ public class RecipeApiHandler implements HttpHandler {
     }
 
     private String buildRecipesJson() {
-        Map<String, RecipeType> resolved = resolveBuiltinTypes();
+        Map<String, RecipeType> resolved = collectRuntimeRecipeTypes(resolveBuiltinTypes());
         Map<String, String> names = new LinkedHashMap<>();
 
         StringBuilder sb = new StringBuilder("{\"items\":{");
