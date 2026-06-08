@@ -169,7 +169,7 @@ public class ResearchApiHandler implements HttpHandler {
             appendString(sb, "name", safeResearchName(r, k)); sb.append(',');
             sb.append("\"levelCost\":").append(safeInt(() -> r.getLevelCost(), 0)).append(',');
             sb.append("\"moneyCost\":").append(safeDouble(() -> r.getMoneyCost(), 0)).append(',');
-            sb.append("\"enabled\":").append(safeBoolean(() -> r.isEnabled(), false)).append(',');
+            sb.append("\"enabled\":").append(safeResearchEnabled(fullKey, true)).append(',');
 
             List<SlimefunItem> items = safeAffectedItems(r);
             if (items == null) items = Collections.emptyList();
@@ -237,6 +237,19 @@ public class ResearchApiHandler implements HttpHandler {
 
     private boolean safeBoolean(BooleanGetter getter, boolean fallback) {
         try { return getter.get(); } catch (Exception e) { return fallback; }
+    }
+
+    private boolean safeResearchEnabled(String fullKey, boolean fallback) {
+        try {
+            Config config = Slimefun.getResearchCfg();
+            if (config == null || fullKey == null) return fallback;
+            String[] parts = fullKey.split(":", 2);
+            String ns = parts.length > 1 ? parts[0] : "slimefun", k = parts.length > 1 ? parts[1] : parts[0];
+            String path = ns + "." + k + ".enabled";
+            return config.contains(path) ? config.getBoolean(path) : fallback;
+        } catch (Exception e) {
+            return fallback;
+        }
     }
 
     private double safeDouble(DoubleGetter getter, double fallback) {

@@ -498,14 +498,7 @@ public class RecipeApiHandler implements HttpHandler {
             return false;
         }
         YamlConfiguration previousRecipes = storedRecipes;
-        storedRecipes = yaml;
-        try {
-            runSync(RecipeApiHandler::applyAllRecipes);
-        } catch (Exception e) {
-            storedRecipes = previousRecipes;
-            plugin.getLogger().log(Level.WARNING, "Failed to apply Recipes.yml", e);
-            return false;
-        }
+        String previousContent = finalFile.exists() ? YamlConfiguration.loadConfiguration(finalFile).saveToString() : null;
 
         try {
             java.nio.file.Files.move(tempFile.toPath(), finalFile.toPath(),
@@ -515,15 +508,38 @@ public class RecipeApiHandler implements HttpHandler {
             try {
                 java.nio.file.Files.move(tempFile.toPath(), finalFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e2) {
-                storedRecipes = previousRecipes;
-                try { runSync(RecipeApiHandler::applyAllRecipes); } catch (Exception ignored) {}
                 plugin.getLogger().log(Level.WARNING, "Failed to replace Recipes.yml", e2);
                 return false;
             }
         }
 
+        storedRecipes = yaml;
+        try {
+            runSync(RecipeApiHandler::applyAllRecipes);
+        } catch (Exception e) {
+            storedRecipes = previousRecipes;
+            restoreRecipesFile(finalFile, previousContent);
+            try { runSync(RecipeApiHandler::applyAllRecipes); } catch (Exception ignored) {}
+            plugin.getLogger().log(Level.WARNING, "Failed to apply Recipes.yml", e);
+            return false;
+        }
+
         plugin.getLogger().info("Recipes.yml saved and applied");
         return true;
+    }
+
+    private void restoreRecipesFile(File finalFile, String previousContent) {
+        try {
+            if (previousContent == null) {
+                java.nio.file.Files.deleteIfExists(finalFile.toPath());
+            } else {
+                try (Writer writer = new OutputStreamWriter(new FileOutputStream(finalFile), StandardCharsets.UTF_8)) {
+                    writer.write(previousContent);
+                }
+            }
+        } catch (IOException e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to restore Recipes.yml after apply failure", e);
+        }
     }
 
     private static void runSync(Runnable task) throws Exception {
