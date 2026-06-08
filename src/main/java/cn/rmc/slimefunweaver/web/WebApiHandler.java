@@ -77,8 +77,8 @@ public class WebApiHandler implements HttpHandler {
             if (path.equals("/api/login")) {
                 handleLogin(exchange, method);
             } else if (path.equals("/") || path.equals("/index.html")) {
-                if (!categoriesEnabled) { exchange.sendResponseHeaders(404, -1); return; }
                 if (!WebSecurity.isAccessAllowed(plugin, exchange)) { serveContent(exchange, loginHtml(), "text/html"); return; }
+                if (!categoriesEnabled) { exchange.sendResponseHeaders(404, -1); return; }
                 serveContent(exchange, indexHtml, "text/html");
             } else if (path.equals("/style.css")) {
                 if (!categoriesEnabled) { exchange.sendResponseHeaders(404, -1); return; }

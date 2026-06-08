@@ -44,10 +44,10 @@ body{background:#0d1117;color:#c9d1d9;font-family:Consolas,'Microsoft YaHei',san
 .recipe-info .ri-key{color:#8b949e;font-size:10px}
 .recipe-info .ri-dots{color:#30363d;margin:0 4px}
 .recipe-grid{display:grid;gap:6px;padding:14px;background:#0d1117;border-radius:8px;border:2px solid #30363d}
-.slot{width:56px;height:56px;background:#21262d;border:2px dashed #30363d;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:0.2s;position:relative;font-size:11px;text-align:center;word-break:break-all;padding:2px;line-height:1.2}
+.slot{width:56px;height:56px;background:#21262d;border:2px dashed #30363d;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:0.2s;position:relative;font-size:10px;text-align:center;overflow:hidden;word-break:break-all;padding:2px;line-height:1.1}
 .slot:hover{border-color:#e94560;background:#2a1f2e}
 .slot.filled{border-style:solid;border-color:#30363d;background:#1a2230;color:#c9d1d9}
-.oslot{width:64px;height:64px;background:#1a2f1a;border:2px solid #2ea043;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#3fb950;font-size:22px;gap:1px}
+.oslot{width:64px;height:64px;background:#1a2f1a;border:2px solid #2ea043;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#3fb950;font-size:10px;gap:1px;overflow:hidden;text-align:center;line-height:1.1;padding:2px;word-break:break-all}
 .oslot span{font-size:10px;color:#8b949e}
 .arrow-dn{display:flex;align-items:center;justify-content:center;color:#484f58;font-size:20px;padding:2px}
 .slabel{color:#b1bac4;font-size:10px;font-weight:600;margin-bottom:4px;margin-top:10px;text-transform:uppercase;letter-spacing:0.5px}
@@ -197,7 +197,7 @@ var MC = {
   escapeHtml: function(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 };
 
-var itemData = {}, recipeTypes = [], allItems = [], selectedItemId = null;
+var itemData = {}, recipeTypes = [], itemNames = {}, allItems = [], selectedItemId = null;
 var currentTypeKey = '', slots = [], outputItemId = '', outputItemName = '', amount = 1, processingTime = 0;
 var pickerTarget = 'slot', pickerSlotIdx = -1;
 var popupCache = [];
@@ -214,6 +214,7 @@ function loadAll() {
   fetch('/api/recipes').then(function(r){return r.json()}).then(function(json){
     itemData = json.items || {};
     recipeTypes = json.recipeTypes || [];
+    itemNames = json.names || {};
     dlog('INIT', 'loaded ' + Object.keys(itemData).length + ' items, ' + recipeTypes.length + ' recipe types');
     allItems = [];
     Object.keys(itemData).forEach(function(k){
@@ -299,18 +300,18 @@ function doSelectItem(id) {
 function resolveName(id) {
   if (!id || id === 'AIR') return '空';
   if (itemData[id]) return itemData[id].name||id;
+  if (itemNames[id]) return itemNames[id];
   return id;
 }
 
 function resolveDisplayName(id) {
-  return MC.escapeHtml(MC.strip(resolveName(id)));
+  return MC.parseToHtml(resolveName(id));
 }
 
 function renderGrid() {
   var info = getTypeInfo(currentTypeKey);
   var cols = info.cols, total = info.slots;
   while (slots.length < total) slots.push(null);
-  while (slots.length > total) slots.pop();
 
   var h = '';
   h += '<div class="recipe-info">';
@@ -388,10 +389,18 @@ function changeType(key) {
   currentTypeKey = key;
   var info = getTypeInfo(key);
   while (slots.length < info.slots) slots.push(null);
-  while (slots.length > info.slots) slots.pop();
   renderTypeList();
   renderGrid();
   updateYaml();
+}
+
+function visibleSlots() {
+  return getTypeInfo(currentTypeKey).slots;
+}
+
+function trimOverflowSlots() {
+  var total = visibleSlots();
+  if (slots.length > total) slots = slots.slice(0, total);
 }
 
 function changeTime(val) {
@@ -459,6 +468,7 @@ function pickMaterial(id, name) {
   if (pickerTarget === 'output') {
     outputItemId = id; outputItemName = name;
   } else if (pickerTarget === 'slot' && pickerSlotIdx >= 0) {
+    trimOverflowSlots();
     slots[pickerSlotIdx] = {id:id, name:name};
   }
   closePicker();
@@ -483,7 +493,7 @@ function updateYaml() {
     return;
   }
   var info = getTypeInfo(currentTypeKey);
-  var inputList = slots.map(function(s){return s&&s.id!=='AIR'?s.id:'AIR';});
+  var inputList = slots.slice(0, visibleSlots()).map(function(s){return s&&s.id!=='AIR'?s.id:'AIR';});
   var timeLine = '';
   if (info.hasTime && processingTime > 0) {
     timeLine = '\n        <span style="color:#ff7b72;">processing-time:</span> <span style="color:#79c0ff;">'+processingTime+'</span>';
@@ -539,7 +549,7 @@ function save() {
   var bag = $id('save-badge');
   bag.textContent = '保存中...'; bag.style.background='#2a1a1a'; bag.style.color='#f85149';
 
-  var inputIds = slots.map(function(s){return s && s.id !== 'AIR' ? s.id : 'AIR';});
+  var inputIds = slots.slice(0, visibleSlots()).map(function(s){return s && s.id !== 'AIR' ? s.id : 'AIR';});
   var recipe = {type:currentTypeKey, input:inputIds, output:outputItemId, outputAmount:amount, processingTime:processingTime};
   var payload = {items:{}};
   payload.items[selectedItemId] = {recipes:[recipe]};

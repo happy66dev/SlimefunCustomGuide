@@ -280,6 +280,7 @@ public class RecipeApiHandler implements HttpHandler {
 
     private String buildRecipesJson() {
         Map<String, RecipeType> resolved = resolveBuiltinTypes();
+        Map<String, String> names = new LinkedHashMap<>();
 
         StringBuilder sb = new StringBuilder("{\"items\":{");
         boolean firstItem = true;
@@ -288,6 +289,7 @@ public class RecipeApiHandler implements HttpHandler {
             String id = item.getId();
             ItemStack[] recipe = item.getRecipe();
             if (recipe == null || recipe.length == 0) continue;
+            names.put(id, item.getItemName());
 
             if (!firstItem) sb.append(','); firstItem = false;
 
@@ -305,7 +307,9 @@ public class RecipeApiHandler implements HttpHandler {
             sb.append("\"currentRecipe\":[");
             for (int i = 0; i < recipe.length; i++) {
                 if (i > 0) sb.append(',');
-                sb.append('"').append(escapeJson(itemIdFromStack(recipe[i]))).append('"');
+                String stackId = itemIdFromStack(recipe[i]);
+                names.put(stackId, displayNameFromStack(recipe[i], stackId));
+                sb.append('"').append(escapeJson(stackId)).append('"');
             }
             sb.append("],");
 
@@ -319,17 +323,29 @@ public class RecipeApiHandler implements HttpHandler {
                         if (isNullRecipeType(String.valueOf(r.get("type")))) continue;
                         if (hasStored) sb.append(',');
                         hasStored = true;
+                        collectRecipeNames(names, r, id);
                         sb.append(recipeToJson(r, id));
                     }
                 }
             }
             if (!hasStored && rtKey != null && !isNullRecipeType(rtKey)) {
+                for (ItemStack stack : recipe) {
+                    String stackId = itemIdFromStack(stack);
+                    names.put(stackId, displayNameFromStack(stack, stackId));
+                }
                 sb.append(defaultRecipeJson(id, rtKey, recipe));
             }
             sb.append(']');
             sb.append('}');
         }
 
+        sb.append("},\"names\":{");
+        boolean firstName = true;
+        for (Map.Entry<String, String> entry : names.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) continue;
+            if (!firstName) sb.append(','); firstName = false;
+            sb.append('"').append(escapeJson(entry.getKey())).append("\":\"").append(escapeJson(entry.getValue())).append('"');
+        }
         sb.append("},\"recipeTypes\":[");
         Map<String, RecipeTypeInfo> allTypes = collectAllRecipeTypes(resolved);
         boolean firstType = true;
@@ -346,6 +362,35 @@ public class RecipeApiHandler implements HttpHandler {
         sb.append("]}");
 
         return sb.toString();
+    }
+
+    private static void collectRecipeNames(Map<String, String> names, Map<?, ?> recipe, String fallbackId) {
+        Object input = recipe.get("input");
+        if (input instanceof List) {
+            for (Object value : (List<?>) input) {
+                String id = String.valueOf(value);
+                names.put(id, displayNameForId(id));
+            }
+        }
+        Object output = recipe.get("output");
+        String outputId = output != null ? String.valueOf(output) : fallbackId;
+        names.put(outputId, displayNameForId(outputId));
+    }
+
+    private static String displayNameFromStack(ItemStack stack, String fallbackId) {
+        if (stack == null || stack.getType() == Material.AIR) return "空";
+        SlimefunItem sfItem = SlimefunItem.getByItem(stack);
+        if (sfItem != null) return sfItem.getItemName();
+        return displayNameForId(fallbackId);
+    }
+
+    private static String displayNameForId(String id) {
+        if (id == null || id.isEmpty() || "AIR".equalsIgnoreCase(id)) return "空";
+        Material mat = Material.matchMaterial(id);
+        if (mat != null) return VanillaMaterialLocalization.getItemName(mat);
+        SlimefunItem sfItem = IconParser.findSlimefunItem(id);
+        if (sfItem != null) return sfItem.getItemName();
+        return id;
     }
 
     private String defaultRecipeJson(String itemId, String rtKey, ItemStack[] recipe) {
@@ -471,6 +516,7 @@ public class RecipeApiHandler implements HttpHandler {
                 java.nio.file.Files.move(tempFile.toPath(), finalFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e2) {
                 storedRecipes = previousRecipes;
+                try { runSync(RecipeApiHandler::applyAllRecipes); } catch (Exception ignored) {}
                 plugin.getLogger().log(Level.WARNING, "Failed to replace Recipes.yml", e2);
                 return false;
             }
@@ -692,7 +738,42 @@ public class RecipeApiHandler implements HttpHandler {
         } catch (Exception ignored) {}
         String shortKey = key.contains(":") ? key.substring(key.lastIndexOf(':') + 1) : key;
         if ("null".equals(shortKey)) return "\u65E0\u7279\u5B9A\u5408\u6210\u65B9\u5F0F";
+        String chinese = builtinRecipeTypeName(shortKey);
+        if (chinese != null) return chinese;
         return shortKey.replace('_', ' ');
+    }
+
+    private static String builtinRecipeTypeName(String shortKey) {
+        switch (shortKey) {
+            case "enhanced_crafting_table": return "增强型工作台";
+            case "armor_forge": return "盔甲锻造台";
+            case "grind_stone": return "磨石";
+            case "smeltery": return "冶炼炉";
+            case "ore_crusher": return "矿石粉碎机";
+            case "compressor": return "压缩机";
+            case "pressure_chamber": return "压力舱";
+            case "magic_workbench": return "魔法工作台";
+            case "gold_pan": return "淘金盘";
+            case "juicer": return "榨汁机";
+            case "ancient_altar": return "远古祭坛";
+            case "heated_pressure_chamber": return "加热压力舱";
+            case "ore_washer": return "洗矿机";
+            case "table_saw": return "锯木机";
+            case "freezer": return "冷冻机";
+            case "food_fabricator": return "食品加工机";
+            case "food_composter": return "食品堆肥机";
+            case "reactor": return "反应堆";
+            case "refinery": return "精炼机";
+            case "automated_panning_machine": return "自动淘金机";
+            case "miner_android": return "矿工机器人";
+            case "fisherman_android": return "渔夫机器人";
+            case "geo_miner": return "地质矿机";
+            case "oil_pump": return "石油泵";
+            case "nuclear_reactor": return "核反应堆";
+            case "shaped": return "有序合成";
+            case "shapeless": return "无序合成";
+            default: return null;
+        }
     }
 
     private static int guessSlots(String key) {
