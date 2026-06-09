@@ -293,7 +293,7 @@ public class ResearchApiHandler implements HttpHandler {
             plugin.getLogger().log(Level.WARNING, "Invalid research save payload", e);
             return false;
         }
-        String[] previousContent = new String[1];
+        String[] previousContent = new String[]{"\0"};
         try {
             runSync(() -> {
                 previousContent[0] = readResearchConfigContent(config);
@@ -328,8 +328,9 @@ public class ResearchApiHandler implements HttpHandler {
             if (file == null) return;
             runSync(() -> {
                 try {
-                    if ("\0".equals(previousContent)) java.nio.file.Files.deleteIfExists(file.toPath());
-                    else java.nio.file.Files.write(file.toPath(), previousContent.getBytes(StandardCharsets.UTF_8));
+                    if (!"\0".equals(previousContent)) {
+                        java.nio.file.Files.write(file.toPath(), previousContent.getBytes(StandardCharsets.UTF_8));
+                    }
                 } catch (IOException e) { throw new RuntimeException(e); }
                 config.reload();
                 Slimefun.getConfigManager().load(true);
