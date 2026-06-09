@@ -330,10 +330,14 @@ public class ResearchApiHandler implements HttpHandler {
         try {
             File file = config.getFile();
             if (file == null) return;
-            if (previousContent == null) java.nio.file.Files.deleteIfExists(file.toPath());
-            else java.nio.file.Files.write(file.toPath(), previousContent.getBytes(StandardCharsets.UTF_8));
-            config.reload();
-            Slimefun.getConfigManager().load(true);
+            runSync(() -> {
+                try {
+                    if (previousContent == null) java.nio.file.Files.deleteIfExists(file.toPath());
+                    else java.nio.file.Files.write(file.toPath(), previousContent.getBytes(StandardCharsets.UTF_8));
+                } catch (IOException e) { throw new RuntimeException(e); }
+                config.reload();
+                Slimefun.getConfigManager().load(true);
+            });
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Failed to restore Researches.yml after web save failure", e);
         }

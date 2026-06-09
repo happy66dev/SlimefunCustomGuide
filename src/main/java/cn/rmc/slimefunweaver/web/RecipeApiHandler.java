@@ -521,9 +521,9 @@ public class RecipeApiHandler implements HttpHandler {
             }
         }
 
+        storedRecipes = yaml;
         try {
             runSync(RecipeApiHandler::applyAllRecipes);
-            storedRecipes = yaml;
         } catch (Exception e) {
             storedRecipes = previousRecipes;
             restoreRecipesFile(finalFile, previousContent);

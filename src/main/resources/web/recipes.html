@@ -269,6 +269,7 @@ function selectItem(id) {
 }
 
 function doSelectItem(id) {
+  if (saving) return;
   dlog('SELECT', 'selectItem: ' + id + ' (prev=' + selectedItemId + ')');
   selectedItemId = id;
   var d = itemData[id];
