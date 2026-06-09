@@ -742,6 +742,7 @@ public class RecipeApiHandler implements HttpHandler {
         private final RecipeType type;
         private final ItemStack[] recipe;
         private final ItemStack output;
+        private final int processingTime;
 
         RecipeSnapshot(SlimefunItem item) {
             this.type = item.getRecipeType();
@@ -749,12 +750,21 @@ public class RecipeApiHandler implements HttpHandler {
             this.recipe = sourceRecipe == null ? null : Arrays.stream(sourceRecipe).map(stack -> stack == null ? null : stack.clone()).toArray(ItemStack[]::new);
             ItemStack sourceOutput = item.getRecipeOutput();
             this.output = sourceOutput == null ? null : sourceOutput.clone();
+            int pt = 0;
+            try { Method gpt = item.getClass().getMethod("getProcessingTime"); pt = (int) gpt.invoke(item); } catch (Exception ignored) {}
+            this.processingTime = pt;
         }
 
         void restore(SlimefunItem item) {
             item.setRecipeType(type);
             item.setRecipe(recipe == null ? null : Arrays.stream(recipe).map(stack -> stack == null ? null : stack.clone()).toArray(ItemStack[]::new));
             item.setRecipeOutput(output == null ? null : output.clone());
+            if (processingTime > 0) {
+                try {
+                    Method setProcessingTime = item.getClass().getMethod("setProcessingTime", int.class);
+                    setProcessingTime.invoke(item, processingTime);
+                } catch (Exception ignored) {}
+            }
         }
     }
 

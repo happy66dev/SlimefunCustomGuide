@@ -474,6 +474,7 @@ function changeType(key) {
   currentTypeKey = key;
   var info = getTypeInfo(key);
   while (slots.length < info.slots) slots.push(null);
+  trimOverflowSlots();
   renderTypeList();
   renderGrid();
   updateYaml();
