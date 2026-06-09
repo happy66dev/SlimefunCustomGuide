@@ -366,6 +366,7 @@ public class ResearchApiHandler implements HttpHandler {
             JsonObject obj = element.getAsJsonObject();
             String fullKey = jsonString(obj, "fullKey");
             if (fullKey == null || fullKey.isEmpty()) continue;
+            if (!fullKey.matches("^[a-z0-9_]+:[a-z0-9_]+$")) continue;
             ResearchUpdate update = new ResearchUpdate(fullKey);
             update.levelCost = jsonInt(obj, "levelCost");
             update.moneyCost = jsonDouble(obj, "moneyCost");
