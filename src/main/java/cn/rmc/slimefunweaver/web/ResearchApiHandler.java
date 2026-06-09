@@ -134,11 +134,7 @@ public class ResearchApiHandler implements HttpHandler {
         for (SlimefunItem item : list) {
             if (!first) sb.append(','); first = false;
             sb.append('{'); appendString(sb, "id", item.getId()); sb.append(',');
-            appendString(sb, "name", item.getItemName()); sb.append(',');
-            Research r = item.getResearch();
-            sb.append("\"research\":"); sb.append(r != null ? '"' + escapeJson(r.getKey().toString()) + '"' : "null");
-            sb.append(','); ItemGroup g = item.getItemGroup();
-            sb.append("\"group\":"); sb.append(g != null ? '"' + escapeJson(g.getUnlocalizedName()) + '"' : "null"); sb.append('}');
+            appendString(sb, "name", item.getItemName()); sb.append('}');
         }
         sb.append("]}"); serveJson(exchange, sb.toString());
     }

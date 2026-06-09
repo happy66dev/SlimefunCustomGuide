@@ -917,7 +917,7 @@ async function doSearch() {
     var html = '';
     if (results.length > 0) {
       results.forEach(function(r) {
-        var typeClass = r.type === 'VANILLA' ? 'vanilla' : (r.type === 'HEAD' ? 'head' : 'slimefun');
+        var typeClass = r.type === 'VANILLA' ? 'vanilla' : 'slimefun';
         // 内部工具，无XSS威胁，type/id直接拼接onclick
         var safeId = (r.id || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         html += '<div class="picker-item" onclick="pickMaterial(\'' + r.type + '\',\'' + safeId + '\')">' +

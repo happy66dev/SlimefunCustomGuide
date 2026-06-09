@@ -461,7 +461,6 @@ public class RecipeApiHandler implements HttpHandler {
     }
 
     private boolean saveRecipesFromJson(String json) {
-        captureOriginalRecipes();
         YamlConfiguration yaml;
         File finalFile = new File(plugin.getDataFolder(), "Recipes.yml");
         if (finalFile.exists()) {
