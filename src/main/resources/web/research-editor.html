@@ -539,7 +539,7 @@ function deleteSelectedArrow(){
   unsaved.newDeps.delete(selectedArrow.fromKey+'\u2192'+selectedArrow.toKey);selectedArrow=null;markDirty();
   autoLayout();if(selectedResearch){renderRightPanel();autoScrollToNode(selectedResearch.key)}buildResearchList(document.getElementById('research-search').value);showToast('已删除依赖','info')
 }
-function startDragConnect(e,fromKey){e.stopPropagation();e.preventDefault();var r=researches.find(function(rr){return rr.key===fromKey});if(!r)return;dragConnect={active:true,fromKey:fromKey,fromPortX:r.x+180,fromPortY:r.y+35}}
+function startDragConnect(e,fromKey){e.stopPropagation();e.preventDefault();if(savingResearches)return;var r=researches.find(function(rr){return rr.key===fromKey});if(!r)return;dragConnect={active:true,fromKey:fromKey,fromPortX:r.x+180,fromPortY:r.y+35}}
 window.addEventListener('mousemove',function(e){if(!dragConnect.active)return;document.querySelectorAll('.gn-port-in').forEach(function(p){p.classList.remove('connecting')});var target=document.elementFromPoint(e.clientX,e.clientY);if(target&&target.classList.contains('gn-port-in'))target.classList.add('connecting')});
 window.addEventListener('mouseup',function(e){
   if(!dragConnect.active)return;document.querySelectorAll('.gn-port-in').forEach(function(p){p.classList.remove('connecting')});if(savingResearches){dragConnect={active:false,fromKey:null,fromPortX:0,fromPortY:0};return}var target=document.elementFromPoint(e.clientX,e.clientY),toKey=null;if(target&&target.classList.contains('gn-port-in'))toKey=target.getAttribute('data-node');

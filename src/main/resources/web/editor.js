@@ -440,6 +440,7 @@ function renderGrid() {
 }
 
 function swapItems(fromPage, fromSlot, toPage, toSlot) {
+  if (state.saving) return;
   var all = getChildren();
   var fromItem = null, toItem = null;
   all.forEach(function(item) {
@@ -574,9 +575,10 @@ document.getElementById('edit-display').addEventListener('input', function(){ up
 document.getElementById('edit-lore').addEventListener('input', function(){ updateLorePreview(); syncCurrentSelection(); });
 
 function deleteSelected() {
+  if (state.saving) return;
   if (!state.selectedNode || !state.selectedCategory) return;
   Dialog.confirm('确定要删除此项吗？此操作无法撤销。', function(ok) {
-    if (!ok) return;
+    if (!ok || state.saving) return;
     var parent = findParent(state.selectedNode);
     if (state.selectedNode.key) {
       if (parent && parent.children) {
@@ -638,8 +640,9 @@ function makeUniqueKey(baseKey) {
 }
 
 function addCategory() {
+  if (state.saving) return;
   Dialog.prompt('输入分类 key（英文 ID）', 'new_category', function(key) {
-    if (!key) return;
+    if (!key || state.saving) return;
     var existing = collectSiblingKeys();
     if (existing.has(key)) {
       var suggested = makeUniqueKey(key);
@@ -861,6 +864,7 @@ function renderReferenceResults() {
 }
 
 function pickRefCategory(index) {
+  if (state.saving) { closePicker(); return; }
   var r = refCategoryResults[index];
   var cat = r.cat;
   var key = cat.key;
@@ -959,7 +963,7 @@ function prevPage() { if (state.currentPage > 1) { state.currentPage--; renderGr
 function nextPage() { var max = getMaxPage(); if (state.currentPage < max) { state.currentPage++; renderGrid(); } }
 
 async function saveAll() {
-  if (state.saving) return;
+  if (state.saving || state.reloading) return;
   state.saving = true;
   syncCurrentSelection();
   var savingDirtyVersion = state.dirtyVersion;
