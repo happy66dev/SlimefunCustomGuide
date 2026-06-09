@@ -148,9 +148,9 @@ var state = {
 function $(id) { return document.getElementById(id); }
 
 function markDirty() {
-  if (state.reloading || state.saving) return;
+  if (state.reloading) return;
   state.dirtyVersion++;
-  if (!state.dirty) { state.dirty = true; updateSaveStatus(); }
+  if (!state.dirty) { state.dirty = true; if (!state.saving) updateSaveStatus(); }
 }
 
 function clearDirty() {
