@@ -368,19 +368,8 @@ function getTypeInfo(key) {
   var found = recipeTypes.find(function(t){return t.key===key;});
   var name = found ? found.name : (key||'');
   var hasTime = found ? !!found.hasTime : false;
-  var totalSlots = found && found.slots ? found.slots : 1;
-  if (!found) {
-    if (slots.length === 9) { totalSlots = 9; }
-    else if (slots.length === 4) { totalSlots = 4; }
-    else if (slots.length === 2) { totalSlots = 2; }
-    else if (slots.length > 0) { totalSlots = slots.length; }
-  }
-  if (slots && slots.length > totalSlots && totalSlots <= 1) {
-    if (slots.length >= 9) { totalSlots = 9; }
-    else if (slots.length >= 4) { totalSlots = 4; }
-    else if (slots.length >= 2) { totalSlots = 2; }
-    else { totalSlots = slots.length; }
-  }
+  var totalSlots = found && found.slots ? found.slots : (slots && slots.length > 0 ? slots.length : 1);
+  if (!found && slots.length === 9) totalSlots = 9; else if (!found && slots.length === 4) totalSlots = 4; else if (!found && slots.length === 2) totalSlots = 2;
   var cols = totalSlots === 9 ? 3 : (totalSlots === 4 ? 2 : (totalSlots === 2 ? 2 : 1));
   return {name:name, slots:totalSlots, cols:cols, hasTime:hasTime};
 }
@@ -554,6 +543,7 @@ function revertItem() {
     renderGrid();
     updateYaml();
     setDirty(false);
+    originalItemName = outputItemName;
     showToast('已放弃修改','success');
   }
 }

@@ -191,7 +191,7 @@ async function discardChanges() {
       renderGrid();
       renderEditor();
       Toast.show('已从服务器重新加载', 'info');
-    });
+    }).catch(function(e) { state.reloading = false; Toast.show('操作失败: ' + e.message, 'error'); });
   });
 }
 
