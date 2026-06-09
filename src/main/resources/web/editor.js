@@ -986,7 +986,7 @@ async function saveAll() {
     if (resp.ok) {
       if (state.dirtyVersion === savingDirtyVersion) clearDirty();
       else updateSaveStatus();
-      Toast.show('保存成功！分类已重新加载', 'success');
+      Toast.show('保存成功', 'success');
     } else {
       var data = null;
       try { data = await resp.json(); } catch(e) {}

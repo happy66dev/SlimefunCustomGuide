@@ -665,10 +665,10 @@ function save() {
   var savingItemId = selectedItemId;
   var savingItemName = originalItemName;
   var savingDirtyVersion = dirtyVersion;
-  var firstRecipe = recipesData[0];
   var recipeList = recipesData.filter(function(r){return !isNullRecipeType(r.type);}).map(function(r){
     return {type: r.type, input: r.input, output: r.output, outputAmount: r.outputAmount || 1, processingTime: r.processingTime || 0};
   });
+  var firstRecipe = recipeList[0];
   var payload = {items:{}};
   payload.items[savingItemId] = {recipes: recipeList};
 

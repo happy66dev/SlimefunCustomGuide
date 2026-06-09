@@ -401,7 +401,7 @@ public class RecipeApiHandler implements HttpHandler {
         for (ItemStack stack : recipe) inputIds.add(itemIdFromStack(stack));
         StringBuilder sb = new StringBuilder();
         sb.append("{\"type\":\"").append(escapeJson(rtKey)).append("\",")
-          .append("\"input\":[").append(jsonStringListCast(inputIds)).append("],")
+          .append("\"input\":[").append(jsonStringList(inputIds)).append("],")
           .append("\"output\":\"").append(escapeJson(itemId)).append("\",")
           .append("\"outputAmount\":1,\"processingTime\":0}");
         return sb.toString();
@@ -902,17 +902,6 @@ public class RecipeApiHandler implements HttpHandler {
         for (Object o : list) {
             if (!first) sb.append(','); first = false;
             sb.append('"').append(escapeJson(String.valueOf(o))).append('"');
-        }
-        return sb.toString();
-    }
-
-    private static String jsonStringListCast(List<String> list) {
-        if (list == null) return "";
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (String s : list) {
-            if (!first) sb.append(','); first = false;
-            sb.append('"').append(escapeJson(s)).append('"');
         }
         return sb.toString();
     }
