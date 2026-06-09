@@ -326,6 +326,7 @@ function buildResearchList(filter){
 }
 function filterResearch(){buildResearchList(document.getElementById('research-search').value)}
 function selectResearch(key){
+  if(savingResearches){showToast('正在保存，请稍后再选择','info');return}
   selectedResearch=researches.find(function(r){return r.key===key})||null;
   buildResearchList(document.getElementById('research-search').value);
   renderCenterTop();renderRightPanel();renderGraph();

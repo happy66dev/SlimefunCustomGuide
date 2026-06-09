@@ -526,6 +526,7 @@ function updateYaml() {
 }
 
 function revertItem() {
+  if (saving) { showToast('正在保存，请稍后再放弃修改','info'); return; }
   if (!selectedItemId) { showToast('请先选择物品','info'); return; }
   dlog('REVERT', 'reverting item ' + selectedItemId + ' from server');
   var d = itemData[selectedItemId];
