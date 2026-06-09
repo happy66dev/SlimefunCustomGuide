@@ -288,10 +288,8 @@ function saveResearches() {
 function discardChanges(){
   if(savingResearches){showToast('正在保存，请稍后再放弃修改','info');return}
   if(!confirm('确定放弃所有未保存的修改？'))return;
-  var reloading = true;
   loadResearches().then(function(){
     unsaved={newResearches:new Set(),newDeps:new Set()};
-    if(!reloading)return;reloading=false;
     clearDirty();
     selectedResearch=null;
     buildResearchList('');
@@ -299,7 +297,6 @@ function discardChanges(){
     autoLayout();
     showToast('已放弃修改','info');
   }).catch(function(e){
-    reloading=false;
     showToast('放弃修改失败: ' + e.message, 'error');
   });
 }

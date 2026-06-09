@@ -193,11 +193,12 @@ public class ResearchApiHandler implements HttpHandler {
                 sb.append('"').append(escapeJson(itemId)).append('"');
             }
             sb.append("],\"parents\":["); boolean firstP = true;
+            java.util.Set<String> seenParents = new java.util.HashSet<>();
             for (SlimefunItem it : needItems) {
                 String itemId = safeItemId(it);
                 if (itemId == null) continue;
                 String pk = itemToResearch.get(itemId);
-                if (pk != null) { if (!firstP) sb.append(','); firstP = false; sb.append('"').append(escapeJson(pk)).append('"'); }
+                if (pk != null && seenParents.add(pk)) { if (!firstP) sb.append(','); firstP = false; sb.append('"').append(escapeJson(pk)).append('"'); }
             }
             sb.append("],");
 
@@ -235,10 +236,6 @@ public class ResearchApiHandler implements HttpHandler {
         try { return getter.get(); } catch (Exception e) { return fallback; }
     }
 
-    private boolean safeBoolean(BooleanGetter getter, boolean fallback) {
-        try { return getter.get(); } catch (Exception e) { return fallback; }
-    }
-
     private boolean safeResearchEnabled(String fullKey, boolean fallback) {
         try {
             Config config = Slimefun.getResearchCfg();
@@ -257,8 +254,6 @@ public class ResearchApiHandler implements HttpHandler {
     }
 
     private interface IntGetter { int get(); }
-
-    private interface BooleanGetter { boolean get(); }
 
     private interface DoubleGetter { double get(); }
 
