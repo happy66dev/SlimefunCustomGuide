@@ -321,6 +321,17 @@ function discardChanges(){
 }
 var unsaved = {newResearches: new Set(), newDeps: new Set()};
 var selectedResearch = null, selectedArrow = null, graphScale = 1, graphOffsetX = 0, graphOffsetY = 0, isPanning = false, panStartX = 0, panStartY = 0;
+var itemIdToResearch = {};
+
+function rebuildItemOwnershipMap() {
+  itemIdToResearch = {};
+  researches.forEach(function(r) {
+    (r.items || []).forEach(function(it) {
+      var itemId = typeof it === 'string' ? it : it.id;
+      itemIdToResearch[itemId] = r;
+    });
+  });
+}
 var dragConnect = {active: false, fromKey: null, fromPortX: 0, fromPortY: 0};
 
 function buildResearchList(filter){
@@ -620,6 +631,7 @@ function updateToolbarStats(){
 loadResearches().then(function() {
   buildResearchList('');
   autoLayout();
+  rebuildItemOwnershipMap();
   console.log('v8: '+researches.length+' 条研究已从API加载');
 }).catch(function(e) {
   console.error('加载失败:', e);
@@ -675,8 +687,12 @@ function deleteResearch() {
 
 function addItemToCurrentResearch(id, name) {
   if (!selectedResearch) { showToast('请先选中一个研究', 'info'); return; }
-  if (selectedResearch.items.some(function(it){ return it.id === id; })) { showToast('该物品已在此研究中', 'info'); return; }
+  var exists = selectedResearch.items.some(function(it){ 
+    return (typeof it === 'string' ? it : it.id) === id; 
+  });
+  if (exists) { showToast('该物品已在此研究中', 'info'); return; }
   selectedResearch.items.push({id:id, name:name||id});
+  itemIdToResearch[id] = selectedResearch;
   markDirty();
   renderCenterTop(selectedResearch);
   buildResearchList(document.getElementById('research-search').value);
@@ -687,6 +703,7 @@ function addItemToCurrentResearch(id, name) {
 function removeItemFromResearch(itemId) {
   if (!selectedResearch || savingResearches) return;
   selectedResearch.items = selectedResearch.items.filter(function(it){ return it.id !== itemId; });
+  delete itemIdToResearch[itemId];
   markDirty();
   renderCenterTop(selectedResearch);
   buildResearchList(document.getElementById('research-search').value);
@@ -700,18 +717,14 @@ function toggleColorPicker(popup, input) {
   }
 }
 
-// Override searchItems to show locked items at bottom
-var _originalSearchItems = window.searchItems;
 window.searchItems = function() {
-  if (typeof _originalSearchItems === 'function') _originalSearchItems();
   var resultsDiv = document.getElementById('item-picker-results');
   if (!resultsDiv) return;
   var rows = resultsDiv.querySelectorAll('[data-item-id]');
   var locked = [], unlocked = [];
   rows.forEach(function(row) {
     var itemId = row.getAttribute('data-item-id');
-    var ownerKey = null;
-    researches.forEach(function(rr) { if ((rr.items||[]).some(function(it){ return it.id === itemId; })) ownerKey = rr; });
+    var ownerKey = itemIdToResearch[itemId];
     if (ownerKey && (!selectedResearch || ownerKey.key !== selectedResearch.key)) {
       row.style.opacity = '0.4'; row.style.cursor = 'not-allowed';
       row.onclick = null;

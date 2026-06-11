@@ -134,9 +134,9 @@ public class ResearchApiHandler implements HttpHandler {
                 return;
             }
             
-            String fullKey = namespace + ":SWR_" + key;
+            String fullKey = namespace + ":" + CustomResearchManager.RESEARCH_PREFIX + key;
             if (CustomResearchManager.researchExists(fullKey)) {
-                serveJson(exchange, "{\"error\":\"研究已存在\"}");
+                exchange.sendResponseHeaders(409, -1);
                 return;
             }
             
@@ -156,7 +156,13 @@ public class ResearchApiHandler implements HttpHandler {
         String[] parts = path.split("/");
         if (parts.length < 4) { exchange.sendResponseHeaders(400, -1); return; }
         String fullKey;
-        try { fullKey = java.net.URLDecoder.decode(parts[parts.length - 1], "UTF-8"); } catch (Exception e) { fullKey = parts[parts.length - 1]; }
+        try { 
+            fullKey = java.net.URLDecoder.decode(parts[parts.length - 1], "UTF-8"); 
+        } catch (Exception e) { 
+            plugin.getLogger().warning("无法解码研究 ID: " + parts[parts.length - 1]);
+            exchange.sendResponseHeaders(400, -1); 
+            return;
+        }
         
         try {
             if (!CustomResearchManager.researchExists(fullKey)) {

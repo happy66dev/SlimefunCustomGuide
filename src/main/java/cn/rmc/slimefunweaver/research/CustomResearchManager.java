@@ -17,9 +17,12 @@ import java.util.logging.Level;
 
 public class CustomResearchManager {
 
+    public static final String RESEARCH_PREFIX = "SWR_";
+    
     private static SlimefunWeaver plugin;
     private static File configFile;
     private static boolean initialized = false;
+    private static int nextResearchId = 100000;
 
     public static void initialize(SlimefunWeaver pluginInstance) {
         if (initialized) {
@@ -50,7 +53,7 @@ public class CustomResearchManager {
                 String[] parts = originalKey.split(":", 2);
                 String namespace = parts.length > 1 ? parts[0] : "slimefun";
                 String key = parts.length > 1 ? parts[1] : parts[0];
-                String customKey = namespace + ":SWR_" + key;
+                String customKey = namespace + ":" + RESEARCH_PREFIX + key;
                 
                 config.set("researches." + customKey + ".name", r.getName(null));
                 config.set("researches." + customKey + ".level-cost", r.getLevelCost());
@@ -101,7 +104,7 @@ public class CustomResearchManager {
                         String[] parts = originalParentKey.split(":", 2);
                         String ns = parts.length > 1 ? parts[0] : "slimefun";
                         String k = parts.length > 1 ? parts[1] : parts[0];
-                        String customParentKey = ns + ":SWR_" + k;
+                        String customParentKey = ns + ":" + RESEARCH_PREFIX + k;
                         if (!customParentKey.equals(customKey) && !parents.contains(customParentKey)) {
                             parents.add(customParentKey);
                         }
@@ -167,7 +170,7 @@ public class CustomResearchManager {
             return;
         }
         
-        Research research = new Research(nsKey, fullKey.hashCode(), name, levelCost);
+        Research research = new Research(nsKey, nextResearchId++, name, levelCost);
         research.setMoneyCost(moneyCost);
         
         List<String> itemIds = config.getStringList("items");
@@ -182,13 +185,19 @@ public class CustomResearchManager {
         List<String> parentKeys = config.getStringList("parents");
         for (String parentKey : parentKeys) {
             ConfigurationSection parentConfig = allConfigs.get(parentKey);
-            if (parentConfig != null) {
-                List<String> parentItemIds = parentConfig.getStringList("items");
-                for (String parentItemId : parentItemIds) {
-                    SlimefunItem parentItem = SlimefunItem.getById(parentItemId);
-                    if (parentItem != null) {
-                        research.addNeedUnlockedItems(parentItem);
-                    }
+            if (parentConfig == null) {
+                plugin.getLogger().warning("研究 " + fullKey + " 的父依赖 " + parentKey + " 不存在，已跳过");
+                continue;
+            }
+            List<String> parentItemIds = parentConfig.getStringList("items");
+            if (parentItemIds.isEmpty()) {
+                plugin.getLogger().warning("研究 " + fullKey + " 的父依赖 " + parentKey + " 没有物品，已跳过");
+                continue;
+            }
+            for (String parentItemId : parentItemIds) {
+                SlimefunItem parentItem = SlimefunItem.getById(parentItemId);
+                if (parentItem != null) {
+                    research.addNeedUnlockedItems(parentItem);
                 }
             }
         }
@@ -280,6 +289,13 @@ public class CustomResearchManager {
         config.save(file);
     }
     
+    /**
+     * 批量保存研究数据到 CustomResearches.yml
+     * 注意: 此方法只更新传入的研究，不会删除配置文件中其他已存在的研究
+     * 
+     * @param researches 要保存的研究列表
+     * @throws Exception 保存失败时抛出异常
+     */
     public static void saveAllResearches(List<ResearchData> researches) throws Exception {
         File file = new File(plugin.getDataFolder(), "CustomResearches.yml");
         YamlConfiguration config = file.exists() ? YamlConfiguration.loadConfiguration(file) : new YamlConfiguration();
